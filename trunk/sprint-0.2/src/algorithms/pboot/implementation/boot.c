@@ -36,92 +36,147 @@ int boot(int n,...)
 {
   int worldSize;
   int worldRank;
-  int i, message_length;
-  char* message_buf;
+  int i,j,k;
   va_list ap;
-  char **in_array;
-
   MPI_Status stat;
-
-  SEXP response, R_fcall;
-  SEXP hello_string, my_rank;
 
   MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
   MPI_Comm_rank(MPI_COMM_WORLD, &worldRank);
-
-  /* Creat R LANGSXP Vector, R function holder
-     length of the vector is 1 + number of arguments */
-  PROTECT(R_fcall = allocVector(LANGSXP, 3));
   
-  /* Create R objects, argument holders passed to
-     a function. */
-  PROTECT(hello_string = allocVector(STRSXP, 1));
-  PROTECT(my_rank = allocVector(INTSXP, 1));
+  //printf("I am rank %i \n", worldRank);
+  // Parse arguments and broadcast those needed.
+  // ======================================================================
 
-  /* Initialise first argument */
-  SET_STRING_ELT(hello_string, 0, mkChar("HELLO, FROM PROCESSOR:"));
+  char * data; // the name of the data object
+  char * statistic; // the string of the statistic name
+  int * ind; // the SEXP containing the indices
+  int c;  // how many columns in the indices
+  int r;  // how many replications to perform
+  int *nr; // array to store the number of replications each node will perform
+
+  int ldata, lstatistic; // the length of strings
+  int count;
+  double *in_array; // this is the array the results are passed out via, r length
   
-  /* Initialise second argument */
-  INTEGER(my_rank)[0] = worldRank;
-
-  /* Build function object, first element is a function name
-     followed by arguments */
-  SETCAR(R_fcall, install("paste"));
-  SETCADR(R_fcall, hello_string);
-  SETCADDR(R_fcall, my_rank);
-
-  /* Response container, Vector of strings, worldSize
-     determines vector length */
-  PROTECT(response = allocVector(STRSXP, 1));
-
-  /* Pass the function to R evaluator */
-  SET_STRING_ELT(response, 0, STRING_ELT(eval(R_fcall, R_GlobalEnv), 0));
-
-  // master processor gathers results form slaves
+  // Get input variables
   if (worldRank == 0) {
-
-    // Get input variables
     va_start(ap, n);
-    in_array = va_arg(ap,char**);
+    in_array = va_arg(ap, double*); // array to place the results back into
+    data = va_arg(ap, char*); // the data to call the statistic on
+    statistic = va_arg(ap, char*); // the statistic function that is to be called
+    r = va_arg(ap, int); // the indices to use
+    c = va_arg(ap, int); // the indices to use
+    ind = va_arg(ap, int *); // the indices to use
     va_end(ap);
+    // some useful calculations
+    ldata = strlen(data);
+    lstatistic = strlen(statistic);
+  }
+  
+  // send variables to slaves
+  MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&c, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&lstatistic, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&ldata, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  // slaves assign memory for data and statistic strings
+  if(worldRank > 0) {
+    data = (char *)malloc((sizeof(char) * ldata) + 1);
+    statistic = (char *)malloc((sizeof(char) * lstatistic) +1);
+  }
+  // send the actual strings
+  MPI_Bcast(statistic, lstatistic+1, MPI_CHAR, 0, MPI_COMM_WORLD);
+  MPI_Bcast(data, ldata+1, MPI_CHAR, 0, MPI_COMM_WORLD);
 
-    message_length = strlen(CHAR(STRING_ELT(response, 0))) + 1;
-    in_array[0] = (char *)malloc(sizeof(char) * message_length);
-    memcpy(in_array[0], CHAR(STRING_ELT(response, worldRank)), message_length);
+  //printf("rank: %i stat: %s data: %s rows: %i cols: %i\n",worldRank,  statistic, data, r, c);
+  
+  // calculate how many replications each node will perform
+  //================================================
+  nr = (int *)malloc(sizeof(int) * worldSize) ;
+  //how many replications will each node perform 
+  for(i=0; i<worldSize; i++){
+    nr[i] = r/worldSize;
+  }
+  // spread the remainder over the ranks (skipping the master as it has enough to do already)
+  int mod = r % worldSize;
+  for(i=1; i<mod+1; i++){
+   nr[i]++;
+  }
+  
 
-    for (i=1; i<worldSize; i++) {
-      // get the message length
-      MPI_Recv(&message_length, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &stat);
-      
-      in_array[i] = (char *)malloc(sizeof(char) * message_length);
+  // allocate array for my indices
+  int * myind; 
+  myind = (int *)malloc(sizeof(int) * c * nr[worldRank]) ;
 
-      // get the message
-      MPI_Recv(in_array[i], message_length, MPI_CHAR, stat.MPI_SOURCE, 0, MPI_COMM_WORLD, &stat);
-
+  if(worldRank == 0){ // send indice decomposition to nodes
+    count = nr[0] * c; // skip those for master
+    for(i=0; i<(nr[0] *c);i++) myind[i] = ind[i];
+    for(i=1; i<worldSize;i++){
+      MPI_Send(&ind[count], nr[i] * c, MPI_INT, i, 4, MPI_COMM_WORLD);
+      count += (nr[i] * c);
     }
-
-    UNPROTECT(4);
-    return 0;
-
-    // slaves send their results
-  } else {
-
-    // determine and send the message length
-    message_length = strlen(CHAR(STRING_ELT(response, 0))) + 1;
-    MPI_Send(&message_length, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-    
-    message_buf = (char *)CHAR(STRING_ELT(response, 0));
-
-    // send message
-    MPI_Send(message_buf, message_length, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
-
-    // Slave processes expect an integer for response
-    // They check the respopse to pick up errors
-    UNPROTECT(4);
-
-    return 0;
-
+  } else { // receive my indices decomposition
+    MPI_Recv(myind, nr[worldRank] * c, MPI_INT, 0, 4, MPI_COMM_WORLD,&stat);
   }
 
+  // perform my ranks replications
+  double * myresults; 
+  SEXP rind, e;
+  myresults = (double *)malloc(sizeof(double) * nr[worldRank]);
+  PROTECT(rind = allocVector(INTSXP,c)); // will be used to store each replications ind 
+  PROTECT(e = allocVector(LANGSXP, 1));
+  count = 0;
+  for(i=0; i<nr[worldRank];i++){
+    for(j=0;j<c;j++){
+      INTEGER(rind)[j] = myind[count];
+      count++;
+    }
+    // preform the eval
+    //PrintValue(rind);
+    e = lang3(install(statistic),install(data), rind);
+    myresults[i] = asReal(eval(e, R_GlobalEnv));
+  }
+
+  // get back results
+  if(worldRank == 0){
+    for(i=0;i<nr[worldRank];i++) in_array[i] = myresults[i];
+    count = nr[0]; 
+    for(i=1;i<worldSize;i++){
+      MPI_Recv(&in_array[count], nr[i], MPI_DOUBLE, i, 5, MPI_COMM_WORLD,&stat);
+      count += nr[i];
+    }
+  } else {  // send results
+    MPI_Send(myresults, nr[worldRank], MPI_DOUBLE, 0, 5, MPI_COMM_WORLD);
+  } 
+
+  UNPROTECT(2);
+  return 0;
+}
+
+
+/* SEXP star;
+
+
+  for(int i=0;i<r;i++){
+    REAL(star)[i] = *REAL(eval(lang3(install(translateChar(PRINTNAME(statistic))), install(translateChar(PRINTNAME(data))),
+                               getRow(i,ind)),R_GlobalEnv)); // ugly as sin. probably wont work with multiple results from a function
+  }
+  UNPROTECT(1);
+  return(star);
+} */
+
+SEXP getRow(int n, SEXP matrix){
+  // this function returns a single row of a SEXP matrix as a vector
+  // only supports INTEGERS at the moment.
+  int cols = ncols(matrix);
+  int rows = nrows(matrix);
+  SEXP row;
+  PROTECT(row = allocVector(INTSXP,cols)); // this needs to support all types not just 
+  int count = n; // start at the correct offset
+  for(int i=0; i<rows; i++){
+    INTEGER(row)[i] = INTEGER(matrix)[count];
+    count += rows;
+  }
+  UNPROTECT(1);
+  return row;
 }
 

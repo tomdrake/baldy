@@ -3,6 +3,7 @@
 useDynLib(sprint)
 
 export(ptest)
+export(pboot)
 export(pcor)
 export(pmaxT)
 export(pterminate)

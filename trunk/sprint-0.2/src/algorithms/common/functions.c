@@ -32,6 +32,7 @@
  */
 
 extern int test(int n,...);
+extern int boot(int n,...);
 extern int correlation(int n,...);
 extern int permutation(int n,...);
 
@@ -55,6 +56,7 @@ int voidCommand(int n,...)
 commandFunction commandLUT[] = {voidCommand, \
                 correlation, \
                 permutation, \
+		boot, \
                 test, \
                 voidCommand};
 
