@@ -79,3 +79,27 @@ sprint.test_pcor <- function() {
 
 }
 
+sprint.test_pboot <- function() {
+
+    if( !require("RUnit", quietly=TRUE) ) {
+        warning("Unit tests not run for pboot - failed to load package RUnit")
+        return()
+    }
+
+    if( !require("sprint", quietly=TRUE) ) {
+        warning("Unit tests not run for pboot - failed to load package sprint")
+        return()
+    }
+
+    # Find path for test scripts
+    path <- system.file(package="sprint", "unitTests", "pboot")
+
+    # Create test suite and execute it
+    testSuite <- defineTestSuite(name="pboot", dirs=path)
+    testData  <- runTestSuite(testSuite)
+
+    # Print out the results
+    printTextProtocol(testData, showDetails=TRUE)
+
+}
+

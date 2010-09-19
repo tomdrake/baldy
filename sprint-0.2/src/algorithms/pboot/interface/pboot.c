@@ -22,86 +22,20 @@
 #include "../../../sprint.h"
 #include "../../../functions.h"
 extern int boot(int n,...);
-SEXP getRow(int n, SEXP matrix);
 
 /* ******************************************************** *
  *  The stub for the R side of a very simple test command.  *
  *  Simply issues the command and returns.                  *
  * ******************************************************** */
 
-SEXP pbootL8(SEXP data, SEXP statistic, SEXP ind, SEXP lt0,... ){
-  SEXP star;
-  int r = nrows(ind); // replications are the number of rows in the index
-  PROTECT(star = allocMatrix(REALSXP,r ,asInteger(lt0))); // t.star <- matrix(NA, sum(R), lt0)
-
-
-  for(int i=0;i<r;i++){
-    REAL(star)[i] = *REAL(eval(lang3(install(translateChar(PRINTNAME(statistic))), install(translateChar(PRINTNAME(data))),
-                               getRow(i,ind)),R_GlobalEnv)); // ugly as sin. probably wont work with multiple results from a function
-  }
-  UNPROTECT(1);
-  return(star); 
-}
-
-SEXP getRow(int n, SEXP matrix){
-  // this function returns a single row of a SEXP matrix as a vector
-  // only supports INTEGERS at the moment.
-  int cols = ncols(matrix);
-  int rows = nrows(matrix);
-  SEXP row;
-  PROTECT(row = allocVector(INTSXP,cols)); // this needs to support all types not just 
-  int count = n; // start at the correct offset
-  for(int i=0; i<rows; i++){
-    INTEGER(row)[i] = INTEGER(matrix)[count];
-    count += rows;
-  }
-  UNPROTECT(1);
-  return row;
-}
-
-// proved way to complex, maybe next time
-SEXP pbootL8BROKEN(SEXP strdata, SEXP strstatistic,
-                            SEXP sim, SEXP simple, SEXP n, SEXP R, SEXP strata, SEXP m, SEXP L, SEXP weights, SEXP myindex,... ){
-
-  /* if (sim != "parametric") {
-            #  if (!simple) // simply is only allowed for ordinary so should never get here. 
-            #   i <- boot:::index.array(n, R, sim, strata, m, L, weights)
-            #if (!simple && ncol(i) > n) {
-            #  pred.i <- as.matrix(i[, (n + 1L):ncol(i)])
-            #  i <- i[, seq_len(n)]
-            #} */
-  //if ( CHAR(STRING_ELT(sim,0)) != "parametric") { // dont need this
-   
-   // Build the command to evaluate (this command)
-   // will be used to generate the index "i"
-   //--------------------------------------------
-   SEXP i, e;
-   PROTECT(i);
-   PROTECT(e = allocVector(LANGSXP, 4));
-   SETCAR(e, myindex);
-   //SETCAR(e, install("boot::index.array")); // doesnt work cant change the namespace nicely. :(
-   SETCADR(e, n);
-   SETCADDR(e, R);
-   SETCADDDR(e, sim);
-   SETCDR(lastElt(e),lang4(strata,m,L,weights));
-   i = eval(e, R_GlobalEnv);
-  
-   if(asLogical(simple) == 0 && nrows(i) > asInteger(n)){
-     
-   }
-
-   //PrintValue(i);
-  UNPROTECT(2);
-  return(strdata);
-}
-
-SEXP pboot(SEXP strdata, SEXP strstatistic, ...)
-{
+SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0,... ){
     SEXP result;
-    char **func_results;
-    int i, response, worldSize;
+    double *func_results;
+    int i, j, response, worldSize;
     enum commandCodes commandCode;
-
+    int r = nrows(ind); // replications are the number of rows in the index
+    int c = ncols(ind); // replications are the number of rows in the index
+    
     MPI_Initialized(&response);
     if (response) {
         DEBUG("MPI is init'ed in ptest\n");
@@ -117,27 +51,36 @@ SEXP pboot(SEXP strdata, SEXP strstatistic, ...)
 
     MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
 
-    func_results = (char **)malloc(sizeof(char*) * worldSize);
-    
+    func_results = (double *)malloc(sizeof(double) * r); // this needs to be changed to support matrix results
 
-    printf("in the interface\n");
     // broadcast command to other processors
     commandCode = PBOOT;
     MPI_Bcast(&commandCode, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
 
-    response = boot(1, func_results);
-
-    PROTECT(result = allocVector(STRSXP, worldSize));
-
-    for(i=0; i < worldSize; i++) {
-        // add message to the response vector
-        SET_STRING_ELT(result, i, mkChar(func_results[i]));
-        free(func_results[i]);
+    // convert the ind from (horrible) SEXP format to C array
+    int * cind;
+    cind = (int *)malloc(sizeof(int) * r * c);
+    int count = 0;
+    int cindx = 0; // position in the cind
+    for(i=0;i<r;i++){
+      cindx = i;
+      for(j=0;j<c;j++){
+        cind[count] = INTEGER(ind)[cindx];
+	count++;
+	cindx += r;
+      }
     }
+    response = boot(1, func_results, translateChar(PRINTNAME(data)), translateChar(PRINTNAME(statistic)), r, c, cind);
+
+    PROTECT(result = allocMatrix(REALSXP,r ,asInteger(lt0))); // t.star <- matrix(NA, sum(R), lt0)
+
+    for(i=0; i < r; i++) {
+        // add message to the response vector
+        REAL(result)[i]= func_results[i];
+        //REAL(result)[i]= i; // dummy
+    }
+    //PrintValue(result);
     free(func_results);
-
-    UNPROTECT(1);
+    UNPROTECT(1); 
     return result;
-
 }
-
