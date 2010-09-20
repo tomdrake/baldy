@@ -1,0 +1,24 @@
+#summary Notes on getting SPRINT installed on different OS.
+#labels ubuntu,sprint,install,R
+
+= Introduction =
+
+Quick install notes for installing SPRINT. 
+
+
+= Ubuntu 10 =
+With standard packages providing MPICH2 1.2.1p1 and R 2.10.1. 
+
+The Ubuntu R package puts the  R include files in /usr/share/R/include/ instead of the standard $R_HOME/include or /usr/lib/R/include so the installer cannot find the include files. 
+
+To fix this you need to run:
+
+`$ cd /usr/lib/R/`
+
+`$ ln -s /usr/share/R/include .`
+
+Then compile normally
+
+`$ R CMD INSTALL sprint-X.X.tgz`
+
+You also need to have a working mpi setup and mpd running.
