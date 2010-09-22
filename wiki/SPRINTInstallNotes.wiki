@@ -22,3 +22,24 @@ Then compile normally
 `$ R CMD INSTALL sprint-X.X.tgz`
 
 You also need to have a working mpi setup and mpd running.
+
+= Fedora 13 NOT WORKING YET =
+== openmpi NOT WORKING YET==
+Install the packages that are needed
+`$ yum install R openmpi openmpi-devel`
+Put the R include files where the installer expects them
+`ln -s /usr/include/R/ /usr/lib/R/include`
+Add mpicc to the path
+`export PATH=$PATH:/usr/lib/openmpi/bin/`
+Add openmpi libs to the path
+`export LD_LIBRARY_PATH=/usr/lib/openmpi/lib/:/usr/lib/openmpi/lib/openmpi/`
+
+Compile 
+`R CMD INSTALL sprint-0.2/`
+
+Gives this error
+{{{
+** testing if installed package can be loaded
+/usr/lib/R/bin/exec/R: symbol lookup error: /usr/lib/openmpi/lib/openmpi/mca_paffinity_linux.so: undefined symbol: mca_base_param_reg_int
+}}}
+
