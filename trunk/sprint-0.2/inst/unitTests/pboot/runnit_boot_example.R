@@ -18,22 +18,36 @@
 #                                                                        #
 ##########################################################################
 
-myfunction <- function (data,indices){
-    d <- data[indices]
-    result <- mean(d)
-    return(result)
+
+# = =============================================================== =
+# =  Massive unit test to check all possible combinations of input  =
+# =  parameters and make sure that the output matches the output    =
+# =  from the serial version.                                       =
+# = =============================================================== =
+
+ratio <- function(d, w) sum(d$x * w)/sum(d$u * w)
+trimmedmean <- function(x, d, trim=0) { return(mean(x[d], trim/length(x))) }
+
+test.bootExample1 <- function() {
+
+  # example from http://www.ats.ucla.edu/stat/r/library/bootstrap.htm 
+  data(city)
+  #defining the ratio function
+  #using the boot function
+  set.seed(1337)
+  a = boot(city, ratio, R=999, stype="w")
+  set.seed(1337)
+  b = pboot(city, ratio, R=999, stype="w")
+  checkEquals(a,b,"Bootstrap examples 1")
+
 }
 
-
-test.standard <- function() {
-DEACTIVATED('Deactivating this test function')
-  set.seed(88)
-  a = boot(trees[,3], myfunction, 100)
-  set.seed(88)
-  b = pboot(trees[,3], myfunction, 100)
-  a
-  b
-  checkEquals(a,b,"Test 0")
-}
-
-
+test.bootTrim <- function() {
+ # http://www.mayin.org/ajayshah/KB/R/documents/boot.html
+   DEACTIVATED("Deactivating this test function")
+   set.seed(1337)
+   a = boot(discoveries, trimmedmean, R=1000, trim=5)
+   set.seed(1337)
+   b = boot(discoveries, trimmedmean, R=1000, trim=5)
+   checkEquals(a,b,"Bootstrap Trim example")
+}   

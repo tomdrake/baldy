@@ -31,13 +31,12 @@ myfunction <- function (data,indices){
     return(result)
 }
 
-#x=c(1,2,3,56,32,4,632,3,5.3)
 
 test.standard <- function() {
   set.seed(88)
-  a = boot(discoveries, myfunction, 100)
+  a = boot(discoveries, myfunction, 1001)
   set.seed(88)
-  b = pboot(discoveries, myfunction, 100)
+  b = pboot(discoveries, myfunction, 1001)
   a
   b
   checkEquals(a,b,"Test 0")

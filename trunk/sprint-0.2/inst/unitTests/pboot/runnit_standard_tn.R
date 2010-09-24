@@ -19,25 +19,20 @@
 ##########################################################################
 
 
-# = =============================================================== =
-# =  Massive unit test to check all possible combinations of input  =
-# =  parameters and make sure that the output matches the output    =
-# =  from the serial version.                                       =
-# = =============================================================== =
-
 myfunction <- function (data,indices){
     d <- data[indices]
     result <- mean(d)
     return(result)
 }
 
-x=c(1,2,3,56,32,4,632,3,5.3)
+test.tn <- function() {
 
-test.standard <- function() {
+  DEACTIVATED('Deactivating this test function')
+  
   set.seed(88)
-  a = pboot(x, myfunction, 100)
+  a = pboot(x, tnmyfunction, 100)
   set.seed(88)
-  b = boot(x, myfunction, 100)
+  b = boot(x, tnmyfunction, 100)
   a
   b
   checkEquals(a,b,"Test 0")
