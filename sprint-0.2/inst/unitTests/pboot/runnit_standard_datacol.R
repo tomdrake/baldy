@@ -26,7 +26,7 @@ myfunction <- function (data,indices){
 
 
 test.standard <- function() {
-DEACTIVATED('Deactivating this test function')
+  DEACTIVATED('Deactivating this test function')
   set.seed(88)
   a = boot(trees[,3], myfunction, 100)
   set.seed(88)
