@@ -19,23 +19,20 @@
 ##########################################################################
 
 
-myfunction <- function (data,indices){
-    d <- data[indices]
-    result <- mean(d)
-    return(result)
-}
+tnfunction <- function (data, indices){
+    girth <- data[indices, 1]
+    height <- data[indices, 2]
+    volume <- data[indices, 3]
+    return(c(mean(girth), mean(height), mean(volume)))
+} 
 
 test.tn <- function() {
-
-  DEACTIVATED('Deactivating this test function')
   
   set.seed(88)
-  a = pboot(x, tnmyfunction, 100)
+  a = boot(trees, tnfunction, 100)
   set.seed(88)
-  b = boot(x, tnmyfunction, 100)
-  a
-  b
-  checkEquals(a,b,"Test 0")
+  b = pboot(trees, tnfunction, 100)
+  checkEquals(a,b,"test tn")
 }
 
 
