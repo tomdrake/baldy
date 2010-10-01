@@ -26,10 +26,20 @@ You also need to have a working mpi setup and mpd running.
 = Fedora 13 =
 == MPICH2 ==
 Install the packages that are needed
+
+
 `$ yum install R R-devel mpich2 mpich2-devel`
+
+
 Add a link so sprint can find the R headers
+
+
 `ln -s /usr/include/R/ /usr/lib/R/include`
+
+
 compile
+
+
 `R CMD INSTALL sprint-0.2/`
 
 
