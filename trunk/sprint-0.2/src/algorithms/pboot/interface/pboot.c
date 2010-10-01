@@ -34,8 +34,9 @@ SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0,... ){
     int i, j, response, worldSize;
     enum commandCodes commandCode;
     int r = nrows(ind); // replications are the number of rows in the index
-    int c = ncols(ind); // replications are the number of rows in the index
-    
+    int c = ncols(ind); // replications are the number of columns in the index
+    int ltn = asInteger(lt0); // the number of results the statistical function returns   
+ 
     MPI_Initialized(&response);
     if (response) {
         DEBUG("MPI is init'ed in ptest\n");
@@ -51,7 +52,7 @@ SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0,... ){
 
     MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
 
-    func_results = (double *)malloc(sizeof(double) * r); // this needs to be changed to support matrix results
+    func_results = (double *)malloc(sizeof(double) * r * ltn); // this needs to be changed to support matrix results
 
     // broadcast command to other processors
     commandCode = PBOOT;
@@ -70,15 +71,23 @@ SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0,... ){
 	cindx += r;
       }
     }
-    response = boot(1, func_results, translateChar(PRINTNAME(data)), translateChar(PRINTNAME(statistic)), r, c, cind);
+    response = boot(1, func_results, translateChar(PRINTNAME(data)), translateChar(PRINTNAME(statistic)), ltn, r, c, cind);
 
-    PROTECT(result = allocMatrix(REALSXP,r ,asInteger(lt0))); // t.star <- matrix(NA, sum(R), lt0)
-
-    for(i=0; i < r; i++) {
-        // add message to the response vector
-        REAL(result)[i]= func_results[i];
-        //REAL(result)[i]= i; // dummy
+    PROTECT(result = allocMatrix(REALSXP,r ,ltn)); // t.star <- matrix(NA, sum(R), lt0)
+    
+ 
+    // jump through array to create SEXP in correct order
+    count = 0;
+    cindx = 0;
+    for(i=0; i < ltn; i++) {
+      cindx = i;
+      for (j=0; j <r; j++){
+        REAL(result)[count]= func_results[cindx];
+        count++;
+        cindx += ltn;
+      }
     }
+    
     //PrintValue(result);
     free(func_results);
     UNPROTECT(1); 

@@ -50,6 +50,7 @@ int boot(int n,...)
   char * data; // the name of the data object
   char * statistic; // the string of the statistic name
   int * ind; // the SEXP containing the indices
+  int ltn;  // number of results the statistic returns
   int c;  // how many columns in the indices
   int r;  // how many replications to perform
   int *nr; // array to store the number of replications each node will perform
@@ -64,6 +65,7 @@ int boot(int n,...)
     in_array = va_arg(ap, double*); // array to place the results back into
     data = va_arg(ap, char*); // the data to call the statistic on
     statistic = va_arg(ap, char*); // the statistic function that is to be called
+    ltn = va_arg(ap, int); // the indices to use
     r = va_arg(ap, int); // the indices to use
     c = va_arg(ap, int); // the indices to use
     ind = va_arg(ap, int *); // the indices to use
@@ -74,6 +76,7 @@ int boot(int n,...)
   }
   
   // send variables to slaves
+  MPI_Bcast(&ltn, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(&c, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(&lstatistic, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -120,11 +123,13 @@ int boot(int n,...)
 
   // perform my ranks replications
   double * myresults; 
-  SEXP rind, e;
-  myresults = (double *)malloc(sizeof(double) * nr[worldRank]);
+  SEXP rind, e, result_array;
+  myresults = (double *)malloc(sizeof(double) * nr[worldRank] * ltn);
   PROTECT(rind = allocVector(INTSXP,c)); // will be used to store each replications ind 
   PROTECT(e = allocVector(LANGSXP, 1));
+  PROTECT(result_array);
   count = 0;
+  int index = 0;
   for(i=0; i<nr[worldRank];i++){
     for(j=0;j<c;j++){
       INTEGER(rind)[j] = myind[count];
@@ -133,22 +138,28 @@ int boot(int n,...)
     // preform the eval
     //PrintValue(rind);
     e = lang3(install(statistic),install(data), rind);
-    myresults[i] = asReal(eval(e, R_GlobalEnv));
+    result_array = eval(e, R_GlobalEnv);
+    //PrintValue(result_array);
+    // get the results out of the REALSXP vector
+    for (k=0; k<ltn;k++){
+      myresults[index] =REAL(result_array)[k];
+      index++;
+    }
   }
 
   // get back results
   if(worldRank == 0){
-    for(i=0;i<nr[worldRank];i++) in_array[i] = myresults[i];
-    count = nr[0]; 
+    for(i=0;i<nr[worldRank]*ltn;i++) in_array[i] = myresults[i];
+    count = nr[0]*ltn; 
     for(i=1;i<worldSize;i++){
-      MPI_Recv(&in_array[count], nr[i], MPI_DOUBLE, i, 5, MPI_COMM_WORLD,&stat);
-      count += nr[i];
+      MPI_Recv(&in_array[count], nr[i]*ltn, MPI_DOUBLE, i, 5, MPI_COMM_WORLD,&stat);
+      count += nr[i]*ltn;
     }
   } else {  // send results
-    MPI_Send(myresults, nr[worldRank], MPI_DOUBLE, 0, 5, MPI_COMM_WORLD);
+    MPI_Send(myresults, nr[worldRank]*ltn, MPI_DOUBLE, 0, 5, MPI_COMM_WORLD);
   } 
 
-  UNPROTECT(2);
+  UNPROTECT(3);
   return 0;
 }
 

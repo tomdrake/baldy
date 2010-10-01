@@ -29,9 +29,9 @@ tnfunction <- function (data, indices){
 test.tn <- function() {
   
   set.seed(88)
-  a = boot(trees, tnfunction, 100)
+  a = boot(trees, tnfunction, 1000)
   set.seed(88)
-  b = pboot(trees, tnfunction, 100)
+  b = pboot(trees, tnfunction, 1000)
   checkEquals(a,b,"test tn")
 }
 
