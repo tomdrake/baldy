@@ -1,5 +1,5 @@
 #summary Notes on getting SPRINT installed on different OS.
-#labels ubuntu,sprint,install,R
+#labels ubuntu,sprint,install,R,fedora
 
 = Introduction =
 
@@ -23,11 +23,20 @@ Then compile normally
 
 You also need to have a working mpi setup and mpd running.
 
-= Fedora 13 NOT WORKING YET =
+= Fedora 13 =
+== MPICH2 ==
+Install the packages that are needed
+`$ yum install R R-devel mpich2 mpich2-devel`
+Add a link so sprint can find the R headers
+`ln -s /usr/include/R/ /usr/lib/R/include`
+compile
+`R CMD INSTALL sprint-0.2/`
+
+
 == openmpi NOT WORKING YET==
 Install the packages that are needed
 
-`$ yum install R openmpi openmpi-devel`
+`$ yum install R R-devel openmpi openmpi-devel`
 
 Put the R include files where the installer expects them
 
@@ -51,6 +60,3 @@ Gives this error
 ** testing if installed package can be loaded
 /usr/lib/R/bin/exec/R: symbol lookup error: /usr/lib/openmpi/lib/openmpi/mca_paffinity_linux.so: undefined symbol: mca_base_param_reg_int
 }}}
-
-== MPICH2 ==
-`yum install mpich2 mpich2-devel`
