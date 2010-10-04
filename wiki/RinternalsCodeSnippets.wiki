@@ -1,4 +1,5 @@
-#Snippets of code that I have found really useful when working with R objects in C
+#summary Snippets of code that I have found really useful when working with R objects in C
+#labels pboot,R,C,RAPI,snippets
 
 = Introduction =
 
