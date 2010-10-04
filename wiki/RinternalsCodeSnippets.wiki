@@ -1,0 +1,9 @@
+#Snippets of code that I have found really useful when working with R objects in C
+
+= Introduction =
+
+== Evaluating a C string in R == 
+{{{char mystring[] = "sample(10)";
+SEXP parsed = eval(lang4(install("parse"),mkString("") , mkString(""),mkString(mystring)),  R_GlobalEnv);
+PrintValue(eval(lang2(install("eval"),parsed), R_GlobalEnv));}}}
+
