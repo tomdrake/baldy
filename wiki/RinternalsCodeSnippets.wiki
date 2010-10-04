@@ -3,7 +3,8 @@
 = Introduction =
 
 == Evaluating a C string in R == 
-{{{char mystring[] = "sample(10)";
+{{{
+char mystring[] = "sample(10)";
 SEXP parsed = eval(lang4(install("parse"),mkString("") , mkString(""),mkString(mystring)),  R_GlobalEnv);
-PrintValue(eval(lang2(install("eval"),parsed), R_GlobalEnv));}}}
-
+PrintValue(eval(lang2(install("eval"),parsed), R_GlobalEnv));
+}}}
