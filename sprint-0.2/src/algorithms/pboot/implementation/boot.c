@@ -123,11 +123,16 @@ int boot(int n,...)
 
   // perform my ranks replications
   double * myresults; 
-  SEXP rind, e, result_array;
+  SEXP rind, e, result_array, Sdata, pdata;
   myresults = (double *)malloc(sizeof(double) * nr[worldRank] * ltn);
   PROTECT(rind = allocVector(INTSXP,c)); // will be used to store each replications ind 
   PROTECT(e = allocVector(LANGSXP, 1));
   PROTECT(result_array);
+  // The power of R is that the data could either be an object ot an expression. So we need to 
+  // eval the data in case its an expression this creates a SEXP in C rather than using the 
+  // install in the way we access the statistic function
+  PROTECT(pdata = eval(lang4(install("parse"),mkString("") , mkString(""),mkString(data)),  R_GlobalEnv));
+  PROTECT(Sdata = eval(lang2(install("eval"),pdata), R_GlobalEnv));
   count = 0;
   int index = 0;
   for(i=0; i<nr[worldRank];i++){
@@ -137,7 +142,7 @@ int boot(int n,...)
     }
     // preform the eval
     //PrintValue(rind);
-    e = lang3(install(statistic),install(data), rind);
+    e = lang3(install(statistic),Sdata, rind);
     result_array = eval(e, R_GlobalEnv);
     //PrintValue(result_array);
     // get the results out of the REALSXP vector
@@ -159,7 +164,7 @@ int boot(int n,...)
     MPI_Send(myresults, nr[worldRank]*ltn, MPI_DOUBLE, 0, 5, MPI_COMM_WORLD);
   } 
 
-  UNPROTECT(3);
+  UNPROTECT(5);
   return 0;
 }
 

@@ -126,8 +126,8 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
 	    # loop 8 
             #for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, i[r, ], ...)
 	    #print("loop 8")
+	    strdata = deparse(substitute(data))
 	    strstatistic = substitute(statistic)
-	    strdata = substitute(data)
 	    t.star = .Call("pboot", strdata, strstatistic,i,lt0,... )
         }
     }

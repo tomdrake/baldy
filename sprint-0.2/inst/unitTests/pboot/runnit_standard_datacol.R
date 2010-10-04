@@ -26,14 +26,34 @@ myfunction <- function (data,indices){
 
 
 test.standard <- function() {
-  DEACTIVATED('Deactivating this test function')
   set.seed(88)
-  a = boot(trees[,3], myfunction, 100)
+  a = boot(discoveries, myfunction, 100)
   set.seed(88)
-  b = pboot(trees[,3], myfunction, 100)
-  a
-  b
+  b = pboot(discoveries, myfunction, 100)
   checkEquals(a,b,"Test 0")
 }
 
+test.standard_df <- function() {
+  set.seed(88)
+  a = boot(trees[,1], myfunction, 340)
+  set.seed(88)
+  b = pboot(trees[,1], myfunction, 340)
+  checkEquals(a,b,"Test 0")
+}
+
+test.standard_label <- function() {
+  set.seed(88)
+  a = boot(trees$Girth, myfunction, 340)
+  set.seed(88)
+  b = pboot(trees$Girth, myfunction, 340)
+  checkEquals(a,b,"Test data with labels")
+}
+
+test.standard_sample <- function() {
+  set.seed(88)
+  a = boot(c(9,4,563,2,3,4,66,53.4), myfunction, 340)
+  set.seed(88)
+  b = pboot(c(9,4,563,2,3,4,66,53.4), myfunction, 340)
+  checkEquals(a,b,"Test data is expression")
+}
 
