@@ -66,7 +66,7 @@ SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0,... ){
     Rmatrix2Carray(ind, cind, r, c);
     
     // sending everything to the implementation function
-    response = boot(1, func_results, translateChar(PRINTNAME(data)), translateChar(PRINTNAME(statistic)), ltn, r, c, cind);
+    response = boot(1, func_results, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), ltn, r, c, cind);
     free(cind);
 
     // Turn the array passed back from the implementation into 
