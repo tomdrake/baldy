@@ -12,7 +12,7 @@ PrintValue(eval(lang2(install("eval"),parsed), R_GlobalEnv));
 
 
 == Converting a SEXP object to C string ==
-Not sure if this is the best way to do it. Before you pass the object to C you need to deparse it (the deparse function in C works differently to the R function).
+Not sure if this is the best way to do it. Before you pass the object to C you need to deparse it (calling same R deparse function from C using evals gives different results).
 `.Call("mycfunc", deparse(data))`
 
 {{{
