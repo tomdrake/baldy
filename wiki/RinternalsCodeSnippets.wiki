@@ -20,3 +20,19 @@ SEXP mycfunc(SEXP data){
     printf("type %s\n", CHAR(STRING_ELT(data,0)));
 }
 }}}
+
+== Creating variable length expression ==
+{{{   
+      SEXP s, t;
+         PROTECT(t = s = allocList(3));
+         SET_TYPEOF(s, LANGSXP);
+         SETCAR(t, install("print")); t = CDR(t);
+         SETCAR(t,  CAR(a)); t = CDR(t);
+         SETCAR(t, ScalarInteger(digits));
+         SET_TAG(t, install("digits"));
+         eval(s, env);
+         UNPROTECT(1);
+}}}
+
+== Creating a dotdotdot object ==
+This is useful if you want to R command from C with a variable number of arguments. For example if your `.Call` was called with a `...` and you need to pass these variables.
