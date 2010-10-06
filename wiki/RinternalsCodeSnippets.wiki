@@ -33,6 +33,3 @@ SEXP mycfunc(SEXP data){
          eval(s, env);
          UNPROTECT(1);
 }}}
-
-== Creating a dotdotdot object ==
-This is useful if you want to R command from C with a variable number of arguments. For example if your `.Call` was called with a `...` and you need to pass these variables.
