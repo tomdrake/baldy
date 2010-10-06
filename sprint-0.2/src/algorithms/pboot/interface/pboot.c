@@ -30,7 +30,8 @@ void Rmatrix2Carray(SEXP matrix, int * array, int r, int c);
  *  Simply issues the command and returns.                  *
  * ******************************************************** */
 
-SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0,... ){
+SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0, SEXP varg){
+    
     SEXP result;
     double *func_results;
     int i, j, response, worldSize;
@@ -66,7 +67,7 @@ SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0,... ){
     Rmatrix2Carray(ind, cind, r, c);
     
     // sending everything to the implementation function
-    response = boot(1, func_results, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), ltn, r, c, cind);
+    response = boot(1, func_results, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), ltn, r, c, cind, varg);
     free(cind);
 
     // Turn the array passed back from the implementation into 

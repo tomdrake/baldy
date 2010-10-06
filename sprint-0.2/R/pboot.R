@@ -23,6 +23,14 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
     strata = rep(1, n), L = NULL, m = 0, weights = NULL, ran.gen = function(d, 
         p) d, mle = NULL, simple = FALSE, ...) 
 {
+
+    # Sort out the ... so it can be passed to C easily
+    vargs <- list(...)
+    pargs <- vector(length=length(vargs))
+    for (i in seq_len(length(vargs))) {
+      pargs[i] = deparse(vargs[i])
+    }
+
     call <- match.call()
     if (simple && (sim != "ordinary" || stype != "i" || sum(m))) {
         warning("'simple=TRUE' is only valid for 'sim=\"ordinary\", stype=\"i\", n=0, so ignored")
@@ -128,7 +136,7 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
 	    #print("loop 8")
 	    strdata = deparse(substitute(data))
 	    strstatistic = substitute(statistic)
-	    t.star = .Call("pboot", strdata, strstatistic,i,lt0,... )
+	    t.star = .Call("pboot", strdata, strstatistic,i,lt0,pargs )
         }
     }
     dimnames(t.star) <- NULL
