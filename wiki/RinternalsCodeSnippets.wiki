@@ -37,7 +37,7 @@ char * SEXP2string(SEXP Sobject){
      size =+ length(STRING_ELT(dSobject,i));
    }
 
-   // malloc the memmory the fill it up
+   // malloc the memory the fill it up
    strobj = (char *)malloc((sizeof(char) * lobject) + 1 );
    int count = 0;
    for(i=0;i<lobject; i++){
