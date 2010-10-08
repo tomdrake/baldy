@@ -28,9 +28,8 @@
 #include <R_ext/Rdynload.h>
 #include <Rdefines.h>
 
-/**
- * The test command simple prints out rank and communicator size.
- **/
+char * SEXP2string(SEXP Sobject);
+
 
 int boot(int n,...)
 {
@@ -83,12 +82,11 @@ int boot(int n,...)
     
     // sort out the variable argumenst of the statistic
     for(i=0;i<lvarg;i++){
-      svarg[i] = CHAR(STRING_ELT(varg,i));
+      svarg[i] = SEXP2string(VECTOR_ELT(varg,i));
       ivarg[i] = strlen(svarg[i]); 
     }
   }
   
-   
   // send variables to slaves
   MPI_Bcast(&ltn, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -108,21 +106,25 @@ int boot(int n,...)
   MPI_Bcast(data, ldata+1, MPI_CHAR, 0, MPI_COMM_WORLD);
   // varg is more complex first get the index then loop to fill svarg
   MPI_Bcast(ivarg, lvarg, MPI_INT, 0, MPI_COMM_WORLD);
+
   for(i=0;i<lvarg;i++){
     if(worldRank > 0) svarg[i] = (char *)malloc((sizeof(char) * (ivarg[i]+1))); // allocate memmory on the slaves
     MPI_Bcast(svarg[i], ivarg[i]+1, MPI_CHAR, 0, MPI_COMM_WORLD);
     //printf("rank %i string %s \n", worldRank ,svarg[i]);
   }
+  free(ivarg);
   // parse the vargs and put into an array of SXP 
-  SEXP * SEXPvarg = (SEXP *)malloc(sizeof(SEXP *) * lvarg);
+  SEXP * SEXPvarg;
+  SEXPvarg = (SEXP *)malloc(sizeof(SEXP *) * lvarg);
   for(i=0;i<lvarg;i++){
     PROTECT(SEXPvarg[i] =  eval(lang2(install("eval"),
             eval(lang4(install("parse"),mkString("") , mkString(""),mkString(svarg[i])),  R_GlobalEnv)
          ), R_GlobalEnv));
-    SEXPvarg[i] = eval(lang2(install("unlist"), SEXPvarg[i]), R_GlobalEnv);
+    //SEXPvarg[i] = eval(lang2(install("unlist"), SEXPvarg[i]), R_GlobalEnv);
     //PrintValue(SEXPvarg[i]);
+    free(svarg[i]);
   } 
-  
+  free(svarg);  
 
   //printf("rank: %i stat: %s data: %s rows: %i cols: %i\n",worldRank,  statistic, data, r, c);
   
@@ -196,16 +198,17 @@ int boot(int n,...)
       t = CDR(t);
     } 
     //printf("rank %i\n", worldRank);
-    //PrintValue(s);
     // preform the eval
     result_array = eval(s, R_GlobalEnv);
+    //PrintValue(result_array);
     // get the results out of the REALSXP vector
     for (k=0; k<ltn;k++){
       myresults[index] =REAL(result_array)[k];
       index++;
     }
   }
-
+  free(SEXPvarg);
+  free(myind);
   // get back results
   if(worldRank == 0){
     for(i=0;i<nr[worldRank]*ltn;i++) in_array[i] = myresults[i];
@@ -217,7 +220,8 @@ int boot(int n,...)
   } else {  // send results
     MPI_Send(myresults, nr[worldRank]*ltn, MPI_DOUBLE, 0, 5, MPI_COMM_WORLD);
   } 
-
+  free(nr);
+  free(myresults);
   UNPROTECT(5+lvarg);
   return 0;
 }
@@ -250,3 +254,28 @@ SEXP getRow(int n, SEXP matrix){
   return row;
 }
 
+
+char * SEXP2string(SEXP Sobject){
+   SEXP dSobject;
+   int i, size=0;
+   static char * strobj;
+   PROTECT(dSobject = eval(lang3(install("deparse"),Sobject,ScalarInteger(500)), R_GlobalEnv));
+
+   int lobject = length(dSobject); // how many rows in the deparsed object
+
+   // first find out how big the object is
+   for(i=0;i<lobject; i++){
+     size =+ length(STRING_ELT(dSobject,i));
+   }
+
+   // malloc the memory then fill it up
+   strobj = (char *)malloc((sizeof(char) * lobject) + 1 );
+   int count = 0;
+   for(i=0;i<lobject; i++){
+     strcpy(&strobj[count], CHAR(STRING_ELT(dSobject,i)));
+     count =+ strlen(strobj);
+   }
+
+   UNPROTECT(1);
+   return(strobj);
+}
