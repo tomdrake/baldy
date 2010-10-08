@@ -21,6 +21,38 @@ SEXP mycfunc(SEXP data){
 }
 }}}
 
+This is in fact a better way, but it will expand the object full which might be good or bad depending what you want to do with it. 
+{{{
+
+char * SEXP2string(SEXP Sobject){
+   SEXP dSobject;
+   int i, size=0;
+   char * strobj;
+   PROTECT(dSobject = eval(lang3(install("deparse"),Sobject,ScalarInteger(500)), R_GlobalEnv));
+
+   int lobject = length(dSobject); // how many rows in the deparsed object
+
+   // first find out how big the object is
+   for(i=0;i<lobject; i++){
+     size =+ length(STRING_ELT(dSobject,i));
+   }
+
+   // malloc the memmory the fill it up
+   strobj = (char *)malloc((sizeof(char) * lobject) + 1 );
+   int count = 0;
+   for(i=0;i<lobject; i++){
+     strcpy(&strobj[count], CHAR(STRING_ELT(dSobject,i)));
+     count =+ strlen(strobj);
+   }
+
+   UNPROTECT(1);
+   return(strobj);
+}
+}}}
+
+
+
+
 == Creating variable length expression ==
 {{{   
       SEXP s, t;
