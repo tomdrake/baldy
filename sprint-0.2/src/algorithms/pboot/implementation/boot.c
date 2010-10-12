@@ -28,8 +28,9 @@
 #include <R_ext/Rdynload.h>
 #include <Rdefines.h>
 
-char * SEXP2string(SEXP Sobject);
+//char * SEXP2string(SEXP Sobject);
 
+void SEXP2string(SEXP Sobject, char ** strobj);
 
 int boot(int n,...)
 {
@@ -76,14 +77,15 @@ int boot(int n,...)
     // some useful calculations
     ldata = strlen(data);
     lstatistic = strlen(statistic);
-    lvarg = length(varg);
+    lvarg = LENGTH(varg);
     ivarg = (int *)malloc(sizeof(int) * lvarg ); 
     svarg = (char **)malloc(sizeof(char *) * lvarg ); 
     
     // sort out the variable argumenst of the statistic
     for(i=0;i<lvarg;i++){
-      svarg[i] = SEXP2string(VECTOR_ELT(varg,i));
+      SEXP2string(VECTOR_ELT(varg,i),&svarg[i]);
       ivarg[i] = strlen(svarg[i]); 
+      //printf("%i: length %i s: %s\n",i, ivarg[i], svarg[i]);
     }
   }
   
@@ -255,27 +257,33 @@ SEXP getRow(int n, SEXP matrix){
 }
 
 
-char * SEXP2string(SEXP Sobject){
-   SEXP dSobject;
-   int i, size=0;
-   static char * strobj;
-   PROTECT(dSobject = eval(lang3(install("deparse"),Sobject,ScalarInteger(500)), R_GlobalEnv));
+void SEXP2string(SEXP Sobject, char ** strobj){
+  SEXP dSobject;
+  int i, size=0;
+  PROTECT(dSobject =
+  eval(lang3(install("deparse"),Sobject,ScalarInteger(500)),R_GlobalEnv));
 
-   int lobject = length(dSobject); // how many rows in the deparsed object
+  int lobject = LENGTH(dSobject); // how many rows in the deparsed object
 
-   // first find out how big the object is
-   for(i=0;i<lobject; i++){
-     size =+ length(STRING_ELT(dSobject,i));
-   }
+  // first find out how big the object is
+  for(i=0;i<lobject; i++){
+    size += strlen(CHAR(STRING_ELT(dSobject,i)));
+    //size =+ LENGTH(STRING_ELT(dSobject,i));
+  }
+  // malloc the memory then fill it up
+  //*strobj = (char *)malloc((sizeof(char) * size) + 1 );
 
-   // malloc the memory then fill it up
-   strobj = (char *)malloc((sizeof(char) * lobject) + 1 );
-   int count = 0;
-   for(i=0;i<lobject; i++){
-     strcpy(&strobj[count], CHAR(STRING_ELT(dSobject,i)));
-     count =+ strlen(strobj);
-   }
+  *strobj = calloc(size+1, sizeof(char));
 
-   UNPROTECT(1);
-   return(strobj);
+  //printf("pointer %i", *strobj );
+  //if( *strobj = NULL) printf("Unable to allocate memory for deparsed SEXP object\n");
+  //*strobj[0] = '\0'; // make sure the string starts with null so cat works
+  for(i=0;i<lobject; i++){
+    strcat(*strobj, CHAR(STRING_ELT(dSobject,i)));
+  }
+  //*strobj = strptr; // pass the ptr back
+
+  UNPROTECT(1);
+  //printf("size %i inside %s string %i\n",size,  *strobj, strlen(*strobj));
 }
+             

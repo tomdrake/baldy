@@ -44,10 +44,9 @@ test.bootExample1 <- function() {
 
 test.bootTrim <- function() {
  # http://www.mayin.org/ajayshah/KB/R/documents/boot.html
-   DEACTIVATED("Deactivating this test function")
    set.seed(1337)
    a = boot(discoveries, trimmedmean, R=1000, trim=5)
    set.seed(1337)
-   b = boot(discoveries, trimmedmean, R=1000, trim=5)
+   b = pboot(discoveries, trimmedmean, R=1000, trim=5)
    checkEquals(a,b,"Bootstrap Trim example")
 }   
