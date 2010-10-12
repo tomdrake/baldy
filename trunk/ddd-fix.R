@@ -1,5 +1,6 @@
-ddddataframe <- function(data, indices, b){
+ddddataframe <- function(data, indices, b, c, myd){
   x = data[indices]
+  y = c 
   return(x + mean(b[,1]))
 }
 
@@ -7,10 +8,7 @@ library(boot)
 library(RUnit)
 
  set.seed(27)
- a = boot(discoveries, ddddataframe, R=100, b=trees)
- set.seed(27)
 library(sprint)
- b = pboot(discoveries, ddddataframe, R=100, b=trees)
+pboot(discoveries, ddddataframe, R=100, b=trees, c=discoveries, myd=sample(1000))
 pterminate()
- checkEquals(a,b,"dataframe passed via ...")
 
