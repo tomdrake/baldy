@@ -24,30 +24,27 @@ SEXP mycfunc(SEXP data){
 This is in fact a better way, but it will expand the object full which might be good or bad depending what you want to do with it. 
 {{{
 
-char * SEXP2string(SEXP Sobject){
-   SEXP dSobject;
-   int i, size=0;
-   char * strobj;
-   PROTECT(dSobject = eval(lang3(install("deparse"),Sobject,ScalarInteger(500)), R_GlobalEnv));
+void SEXP2string(SEXP Sobject, char ** strobj){
+  SEXP dSobject;
+  int i, size=0;
+  PROTECT(dSobject = eval(lang3(install("deparse"),Sobject,ScalarInteger(500)),R_GlobalEnv));
 
-   int lobject = length(dSobject); // how many rows in the deparsed object
+  int lobject = LENGTH(dSobject); // how many rows in the deparsed object
 
-   // first find out how big the object is
-   for(i=0;i<lobject; i++){
-     size =+ length(STRING_ELT(dSobject,i));
-   }
+  // first find out how big the object is
+  for(i=0;i<lobject; i++){
+    size += strlen(CHAR(STRING_ELT(dSobject,i)));
+  }
+  // malloc the memory then fill it up
+  *strobj = calloc(size+1, sizeof(char));
 
-   // malloc the memory then fill it up
-   strobj = (char *)malloc((sizeof(char) * lobject) + 1 );
-   int count = 0;
-   for(i=0;i<lobject; i++){
-     strcpy(&strobj[count], CHAR(STRING_ELT(dSobject,i)));
-     count =+ strlen(strobj);
-   }
+  for(i=0;i<lobject; i++){
+    strcat(*strobj, CHAR(STRING_ELT(dSobject,i)));
+  }
 
-   UNPROTECT(1);
-   return(strobj);
+  UNPROTECT(1);
 }
+
 }}}
 
 
