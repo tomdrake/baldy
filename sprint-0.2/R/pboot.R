@@ -23,13 +23,10 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
     strata = rep(1, n), L = NULL, m = 0, weights = NULL, ran.gen = function(d, 
         p) d, mle = NULL, simple = FALSE, ...) 
 {
-
     # Sort out the ... so it can be passed to C easily
     vargs <- list(...)
-#    pargs <- vector(length=length(vargs))
-#    for (i in seq_len(length(vargs))) {
-#      pargs[i] = deparse(vargs[i])
-#    }
+    strdata = deparse(substitute(data))
+    strstatistic = substitute(statistic)
 
     call <- match.call()
     if (simple && (sim != "ordinary" || stype != "i" || sum(m))) {
@@ -87,9 +84,17 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
     t.star <- matrix(NA, sum(R), lt0)
     pred.i <- NULL
     if (sim == "parametric") {
-        # loop 1
-        for (r in seq_len(R)) t.star[r, ] <- statistic(ran.gen(data, 
-            mle), ...)
+        # Scenario: 1
+        # a function (ran.gen) is used to create a random dataset for
+        # each replication. 
+        # The plan:
+        # pass data, ran.gen, statistic, mle, lto and vargs to SPRINT
+        # each slave generates a complete set of random intergers
+        # then does its part.
+
+        #for (r in seq_len(R)) t.star[r, ] <- statistic(ran.gen(data, 
+        #    mle), ...)
+	t.star = .Call("pboot", 1, R, lt0, vargs, strdata, strstatistic, ran.gen, mle )
     }
     else {
         if (!simple && ncol(i) > n) {
@@ -134,9 +139,7 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
 	    # loop 8 
             #for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, i[r, ], ...)
 	    #print("loop 8")
-	    strdata = deparse(substitute(data))
-	    strstatistic = substitute(statistic)
-	    t.star = .Call("pboot", strdata, strstatistic,i,lt0,vargs )
+	    t.star = .Call("pboot", 8, R, lt0, vargs, strdata, strstatistic, i)
         }
     }
     dimnames(t.star) <- NULL

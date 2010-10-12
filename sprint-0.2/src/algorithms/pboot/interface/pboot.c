@@ -30,54 +30,88 @@ void Rmatrix2Carray(SEXP matrix, int * array, int r, int c);
  *  Simply issues the command and returns.                  *
  * ******************************************************** */
 
-SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0, SEXP varg){
-    
-    SEXP result;
-    double *func_results;
-    int response, worldSize;
-    enum commandCodes commandCode;
-    int r = nrows(ind); // replications are the number of rows in the index
-    int c = ncols(ind); // replications are the number of columns in the index
-    int ltn = asInteger(lt0); // the number of results the statistical function returns   
+//SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0, SEXP varg){
+SEXP pboot(SEXP scenario,...){
+   
+  SEXP result;
+  double *func_results;
+  int response, worldSize;
+  enum commandCodes commandCode;
+  int scene = asInteger(scenario);
+  va_list ap;
+
+  // get the function arguments common to all scenarios 
+  // 1, R, lt0, vargs, strdata, strstatistic
+  va_start(ap, scenario); 
+  int r = asInteger(va_arg(ap, SEXP)); // the number of replications to perform
+  int ltn = asInteger(va_arg(ap, SEXP)); // the number of results the statistical function returns
+  SEXP varg = va_arg(ap, SEXP);
+  SEXP data = va_arg(ap, SEXP);
+  SEXP statistic = va_arg(ap, SEXP);
+
+  MPI_Initialized(&response);
+  if (response) {
+      DEBUG("MPI is init'ed in ptest\n");
+  } else {
+
+      DEBUG("MPI is NOT init'ed in ptest\n");
+      PROTECT(result = NEW_INTEGER(1));
+      INTEGER(result)[0] = -1;
+      UNPROTECT(1);
+
+      return result;
+  }
+
+  MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
  
-    MPI_Initialized(&response);
-    if (response) {
-        DEBUG("MPI is init'ed in ptest\n");
-    } else {
+  // broadcast command to other processors
+  commandCode = PBOOT;
+  MPI_Bcast(&commandCode, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
 
-        DEBUG("MPI is NOT init'ed in ptest\n");
-        PROTECT(result = NEW_INTEGER(1));
-        INTEGER(result)[0] = -1;
-        UNPROTECT(1);
+  // intialise the memory to store the results
+  func_results = (double *)malloc(sizeof(double) * r * ltn); 
 
-        return result;
-    }
+  switch(scene) {   
+    case 1:
+      break; 
+    case 2:
+      break; 
+    case 3:
+      break; 
+    case 4:
+      break; 
+    case 5:
+      break; 
+    case 6:
+      break; 
+    case 7:
+      break; 
+    case 8:
+      ;// work around for gcc bug
+      // retrieve function arguments 
+      SEXP ind = va_arg(ap, SEXP);
+      int c = ncols(ind); // replications are the number of columns in the index
+      // convert the ind from (horrible) SEXP format to C array
+      int * cind;
+      cind = (int *)malloc(sizeof(int) * r * c);
+      Rmatrix2Carray(ind, cind, r, c);
+      
+      // sending everything to the implementation function
+      response = boot(1, func_results, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), ltn, r, c, cind, varg);
+      free(cind);
+      break; // end of scenario 8
+    default:
+      break; 
+  }// end of switch
 
-    MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
-
-    func_results = (double *)malloc(sizeof(double) * r * ltn); // this needs to be changed to support matrix results
-
-    // broadcast command to other processors
-    commandCode = PBOOT;
-    MPI_Bcast(&commandCode, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
-
-    // convert the ind from (horrible) SEXP format to C array
-    int * cind;
-    cind = (int *)malloc(sizeof(int) * r * c);
-    Rmatrix2Carray(ind, cind, r, c);
+  // Turn the array passed back from the implementation into 
+  // a SEXP object that can be returned to R.
+  PROTECT(result = allocMatrix(REALSXP,r ,ltn)); // t.star <- matrix(NA, sum(R), lt0)
+  Carray2Rmatrix(func_results, result, r, ltn);
+  free(func_results);
     
-    // sending everything to the implementation function
-    response = boot(1, func_results, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), ltn, r, c, cind, varg);
-    free(cind);
-
-    // Turn the array passed back from the implementation into 
-    // a SEXP object that can be returned to R.
-    PROTECT(result = allocMatrix(REALSXP,r ,ltn)); // t.star <- matrix(NA, sum(R), lt0)
-    Carray2Rmatrix(func_results, result, r, ltn);
-    free(func_results);
-    
-    UNPROTECT(1); 
-    return result;
+  UNPROTECT(1); 
+  return result;
 }
 
 void Rmatrix2Carray(SEXP matrix, int * array, int r, int c){
