@@ -34,7 +34,7 @@ SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0, SEXP varg){
     
     SEXP result;
     double *func_results;
-    int i, j, response, worldSize;
+    int response, worldSize;
     enum commandCodes commandCode;
     int r = nrows(ind); // replications are the number of rows in the index
     int c = ncols(ind); // replications are the number of columns in the index
@@ -76,7 +76,6 @@ SEXP pboot(SEXP data, SEXP statistic, SEXP ind, SEXP lt0, SEXP varg){
     Carray2Rmatrix(func_results, result, r, ltn);
     free(func_results);
     
-    //PrintValue(result);
     UNPROTECT(1); 
     return result;
 }

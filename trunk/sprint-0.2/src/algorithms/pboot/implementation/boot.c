@@ -28,7 +28,6 @@
 #include <R_ext/Rdynload.h>
 #include <Rdefines.h>
 
-//char * SEXP2string(SEXP Sobject);
 
 void SEXP2string(SEXP Sobject, char ** strobj);
 
@@ -43,7 +42,6 @@ int boot(int n,...)
   MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
   MPI_Comm_rank(MPI_COMM_WORLD, &worldRank);
   
-  //printf("I am rank %i \n", worldRank);
   // Parse arguments and broadcast those needed.
   // ======================================================================
 
@@ -85,7 +83,6 @@ int boot(int n,...)
     for(i=0;i<lvarg;i++){
       SEXP2string(VECTOR_ELT(varg,i),&svarg[i]);
       ivarg[i] = strlen(svarg[i]); 
-      //printf("%i: length %i s: %s\n",i, ivarg[i], svarg[i]);
     }
   }
   
@@ -112,7 +109,6 @@ int boot(int n,...)
   for(i=0;i<lvarg;i++){
     if(worldRank > 0) svarg[i] = (char *)malloc((sizeof(char) * (ivarg[i]+1))); // allocate memmory on the slaves
     MPI_Bcast(svarg[i], ivarg[i]+1, MPI_CHAR, 0, MPI_COMM_WORLD);
-    //printf("rank %i string %s \n", worldRank ,svarg[i]);
   }
   free(ivarg);
   // parse the vargs and put into an array of SXP 
@@ -122,8 +118,6 @@ int boot(int n,...)
     PROTECT(SEXPvarg[i] =  eval(lang2(install("eval"),
             eval(lang4(install("parse"),mkString("") , mkString(""),mkString(svarg[i])),  R_GlobalEnv)
          ), R_GlobalEnv));
-    //SEXPvarg[i] = eval(lang2(install("unlist"), SEXPvarg[i]), R_GlobalEnv);
-    //PrintValue(SEXPvarg[i]);
     free(svarg[i]);
   } 
   free(svarg);  
@@ -167,11 +161,6 @@ int boot(int n,...)
   PROTECT(t = s = allocList(3+lvarg));
          SET_TYPEOF(s, LANGSXP);
   PROTECT(result_array);
-  
-//  SEXP  varg;
-//  PROTECT(varg);
-//  varg = lang3(ScalarReal(1),mkChar("foo"),ScalarReal(50));
- // PrintValue(varg);
 
   // The power of R is that the data could either be an object ot an expression. So we need to 
   // eval the data in case its an expression this creates a SEXP in C rather than using the 
@@ -195,14 +184,10 @@ int boot(int n,...)
     SETCAR(t, rind); t = CDR(t);
     for(k=0; k<lvarg;k++){ // add the varg SEXP objects (the ... ones)
       SETCAR(t, SEXPvarg[k]);
-      //printf("rank %i arg %i type %i\n",worldRank, k, TYPEOF(SEXPvarg[k]));
-      //PrintValue(SEXPvarg[k]);
       t = CDR(t);
     } 
-    //printf("rank %i\n", worldRank);
     // preform the eval
     result_array = eval(s, R_GlobalEnv);
-    //PrintValue(result_array);
     // get the results out of the REALSXP vector
     for (k=0; k<ltn;k++){
       myresults[index] =REAL(result_array)[k];
@@ -228,18 +213,6 @@ int boot(int n,...)
   return 0;
 }
 
-
-/* SEXP star;
-
-
-  for(int i=0;i<r;i++){
-    REAL(star)[i] = *REAL(eval(lang3(install(translateChar(PRINTNAME(statistic))), install(translateChar(PRINTNAME(data))),
-                               getRow(i,ind)),R_GlobalEnv)); // ugly as sin. probably wont work with multiple results from a function
-  }
-  UNPROTECT(1);
-  return(star);
-} */
-
 SEXP getRow(int n, SEXP matrix){
   // this function returns a single row of a SEXP matrix as a vector
   // only supports INTEGERS at the moment.
@@ -260,30 +233,21 @@ SEXP getRow(int n, SEXP matrix){
 void SEXP2string(SEXP Sobject, char ** strobj){
   SEXP dSobject;
   int i, size=0;
-  PROTECT(dSobject =
-  eval(lang3(install("deparse"),Sobject,ScalarInteger(500)),R_GlobalEnv));
+  PROTECT(dSobject = eval(lang3(install("deparse"),Sobject,ScalarInteger(500)),R_GlobalEnv));
 
   int lobject = LENGTH(dSobject); // how many rows in the deparsed object
 
   // first find out how big the object is
   for(i=0;i<lobject; i++){
     size += strlen(CHAR(STRING_ELT(dSobject,i)));
-    //size =+ LENGTH(STRING_ELT(dSobject,i));
   }
   // malloc the memory then fill it up
-  //*strobj = (char *)malloc((sizeof(char) * size) + 1 );
-
   *strobj = calloc(size+1, sizeof(char));
 
-  //printf("pointer %i", *strobj );
-  //if( *strobj = NULL) printf("Unable to allocate memory for deparsed SEXP object\n");
-  //*strobj[0] = '\0'; // make sure the string starts with null so cat works
   for(i=0;i<lobject; i++){
     strcat(*strobj, CHAR(STRING_ELT(dSobject,i)));
   }
-  //*strobj = strptr; // pass the ptr back
 
   UNPROTECT(1);
-  //printf("size %i inside %s string %i\n",size,  *strobj, strlen(*strobj));
 }
              
