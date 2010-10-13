@@ -126,6 +126,13 @@ int boot(int scenario,...)
   switch(scenario) {
     case 1:
       printf("NOT IMPLEMENTED YET ---- Scenario: 1\n");
+      if(worldRank == 0){
+        SEXP Srangen, Smle;
+        Srangen = va_arg(ap, SEXP);
+        Smle = va_arg(ap, SEXP);
+        PrintValue(Smle);
+        
+      }
       // allocate array for my indices
       for(i=0; i<nr[worldRank]*ltn;i++){
         myresults[i] = 0.1 + worldRank; 
@@ -238,7 +245,7 @@ int boot(int scenario,...)
     default:
       break;
   }// end of switch
-
+  va_end(ap); // free the ap pointer
   // get back results
   if(worldRank == 0){
     for(i=0;i<nr[worldRank]*ltn;i++) in_array[i] = myresults[i];

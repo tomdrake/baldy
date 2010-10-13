@@ -74,6 +74,8 @@ SEXP pboot(SEXP scenario,...){
   switch(scene) {   
     case 1:;
       SEXP rangen, mle;
+      rangen = va_arg(ap, SEXP);
+      mle = va_arg(ap, SEXP);
       response = boot(1, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), rangen, mle);
       break; 
     case 2:
