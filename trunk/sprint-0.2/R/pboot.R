@@ -175,21 +175,3 @@ pboot.return <- function (sim, t0, t, strata, R, data, stat, stype, call, seed,
     out$call[[1L]] = quote(boot) # call needs to use "boot" not "pboot" so that boot methods work
     out
 }
-
-
-#ptest <- function()
-#{
-
-    
-   # return_val <- .Call("ptest")
-
-    # If the value is numeric then it means that
-    # MPI is not initialized and the function should abort
-    # and return FALSE
-    #if ( is.numeric(return_val) ) {
-    #    warning(paste("MPI is not initialized. Function is aborted.\n"))
-    #    return_val <- FALSE
-    #}
-
-    #return(return_val)
-#}

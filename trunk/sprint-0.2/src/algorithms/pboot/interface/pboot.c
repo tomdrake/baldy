@@ -72,7 +72,9 @@ SEXP pboot(SEXP scenario,...){
   func_results = (double *)malloc(sizeof(double) * r * ltn); 
 
   switch(scene) {   
-    case 1:
+    case 1:;
+      SEXP rangen, mle;
+      response = boot(1, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), rangen, mle);
       break; 
     case 2:
       break; 
@@ -97,19 +99,18 @@ SEXP pboot(SEXP scenario,...){
       Rmatrix2Carray(ind, cind, r, c);
       
       // sending everything to the implementation function
-      response = boot(1, func_results, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), ltn, r, c, cind, varg);
+      response = boot(8, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, cind);
       free(cind);
       break; // end of scenario 8
     default:
       break; 
   }// end of switch
-
+  va_end(ap);
   // Turn the array passed back from the implementation into 
   // a SEXP object that can be returned to R.
   PROTECT(result = allocMatrix(REALSXP,r ,ltn)); // t.star <- matrix(NA, sum(R), lt0)
   Carray2Rmatrix(func_results, result, r, ltn);
   free(func_results);
-    
   UNPROTECT(1); 
   return result;
 }
