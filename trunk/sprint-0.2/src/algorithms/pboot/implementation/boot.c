@@ -126,6 +126,7 @@ int boot(int scenario,...)
   switch(scenario) {
     case 1:
       printf("NOT IMPLEMENTED YET ---- Scenario: 1\n");
+      // allocate array for my indices
       for(i=0; i<nr[worldRank]*ltn;i++){
         myresults[i] = 0.1 + worldRank; 
       }
@@ -166,76 +167,73 @@ int boot(int scenario,...)
         myresults[i] = i; 
       }
       break;// end of scenario 7
-    case 8: /*
-    c = va_arg(ap, int); 
-  MPI_Bcast(&c, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    ind = va_arg(ap, int *); 
-      char * data; // the name of the data object
-      int * ind; // the SEXP containing the indices
-      int c;  // how many columns in the indices
-      int ldata, lstatistic; // the length of strings
+    case 8:;
+      // get the two extra arguments needed c and ind
+      int c;
+      if(worldRank == 0) c = va_arg(ap, int); 
+      MPI_Bcast(&c, 1, MPI_INT, 0, MPI_COMM_WORLD);
+      int * ind; // the array containing the indices
 
-  // allocate array for my indices
+      // allocate array for my indices
       int * myind;
-      myind = (int *)malloc(sizeof(int) * c * nr[worldRank]) ;
 
-    if(worldRank == 0){ // send indice decomposition to nodes
-      count = nr[0] * c; // skip those for master
-      for(i=0; i<(nr[0] *c);i++) myind[i] = ind[i];
+      myind = (int *)malloc(sizeof(int) * c * nr[worldRank]) ;
+      if(worldRank == 0){ // send indice decomposition to nodes   
+        ind = va_arg(ap, int *); // get from arguments
+        count = nr[0] * c; // skip those for master
+        for(i=0; i<(nr[0] *c);i++) myind[i] = ind[i];
         for(i=1; i<worldSize;i++){
           MPI_Send(&ind[count], nr[i] * c, MPI_INT, i, 4, MPI_COMM_WORLD);
           count += (nr[i] * c);
         }
       } else { // receive my indices decomposition
-        MPI_Recv(myind, nr[worldRank] * c, MPI_INT, 0, 4, MPI_COMM_WORLD,&stat);
+          MPI_Recv(myind, nr[worldRank] * c, MPI_INT, 0, 4, MPI_COMM_WORLD,&stat);
       }
 
 
-  // perform my ranks replications
-  double * myresults;
-  SEXP rind, t, s,  result_array, Sdata, pdata;
-  myresults = (double *)malloc(sizeof(double) * nr[worldRank] * ltn);
-  PROTECT(rind = allocVector(INTSXP,c)); // will be used to store each replications ind
-  PROTECT(t = s = allocList(3+lvarg));
-         SET_TYPEOF(s, LANGSXP);
-  PROTECT(result_array);
+      // perform my ranks replications
+      SEXP rind, t, s,  result_array, Sdata, pdata;
+      myresults = (double *)malloc(sizeof(double) * nr[worldRank] * ltn);
+      PROTECT(rind = allocVector(INTSXP,c)); // will be used to store each replications ind
+      PROTECT(t = s = allocList(3+lvarg));
+      SET_TYPEOF(s, LANGSXP);
+      PROTECT(result_array);
 
-  // The power of R is that the data could either be an object ot an expression. So we need to
-  // eval the data in case its an expression this creates a SEXP in C rather than using the
-  // install in the way we access the statistic function
-  PROTECT(pdata = eval(lang4(install("parse"),mkString("") , mkString(""),mkString(data)),  R_GlobalEnv));
-  PROTECT(Sdata = eval(lang2(install("eval"),pdata), R_GlobalEnv));
-  count = 0;
-  int index = 0;
-  for(i=0; i<nr[worldRank];i++){
-    // build the indices for this replication
-    for(j=0;j<c;j++){
-      INTEGER(rind)[j] = myind[count];
-      count++;
-    }
+      // The power of R is that the data could either be an object ot an expression. So we need to
+      // eval the data in case its an expression this creates a SEXP in C rather than using the
+      // install in the way we access the statistic function
+      PROTECT(pdata = eval(lang4(install("parse"),mkString("") , mkString(""),mkString(data)),  R_GlobalEnv));
+      PROTECT(Sdata = eval(lang2(install("eval"),pdata), R_GlobalEnv));
+      count = 0;
+      int index = 0;
+      for(i=0; i<nr[worldRank];i++){
+      // build the indices for this replication
+        for(j=0;j<c;j++){
+          INTEGER(rind)[j] = myind[count];
+          count++;
+        }
 
-    // build the expression for this replication
-    //e = lang4(install(statistic),Sdata, rind, ScalarReal(50));
-    t = s; // jump back to the start of the object
-    SETCAR(t, install(statistic)); t = CDR(t);
-    SETCAR(t, Sdata); t = CDR(t);
-    SETCAR(t, rind); t = CDR(t);
-    for(k=0; k<lvarg;k++){ // add the varg SEXP objects (the ... ones)
-      SETCAR(t, SEXPvarg[k]);
-      t = CDR(t);
-    }
-    // preform the eval
-    result_array = eval(s, R_GlobalEnv);
-    // get the results out of the REALSXP vector
-    for (k=0; k<ltn;k++){
-      myresults[index] =REAL(result_array)[k];
-      index++;
-    }
-  }
-  free(SEXPvarg);
-  free(myind);
-
-*/
+        // build the expression for this replication
+        //e = lang4(install(statistic),Sdata, rind, ScalarReal(50));
+        t = s; // jump back to the start of the object
+        SETCAR(t, install(statistic)); t = CDR(t);
+        SETCAR(t, Sdata); t = CDR(t);
+        SETCAR(t, rind); t = CDR(t);
+        for(k=0; k<lvarg;k++){ // add the varg SEXP objects (the ... ones)
+          SETCAR(t, SEXPvarg[k]);
+          t = CDR(t);
+        }
+        // preform the eval
+        result_array = eval(s, R_GlobalEnv);
+        // get the results out of the REALSXP vector
+        for (k=0; k<ltn;k++){
+         myresults[index] =REAL(result_array)[k];
+         index++;
+        }
+      }
+     free(SEXPvarg);
+     free(myind);
+     UNPROTECT(5);
       break; // end of scenario 8
     default:
       break;
