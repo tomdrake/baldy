@@ -31,7 +31,8 @@
 
 void SEXP2string(SEXP Sobject, char ** strobj);
 int * pbootDecomp(int world, int r);
-void bootScenario1(double * myresults,int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
+void setSeed(char * seed);
+void bootScenario1(double * myresults, int * nr, int rank, int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
                                                       char * statistic, char * rangen, char *mle);
 
 int boot(int scenario,...)
@@ -126,25 +127,37 @@ int boot(int scenario,...)
   myresults = (double *)malloc(sizeof(double) * nr[worldRank] * ltn);
   
   switch(scenario) {
-    case 1:
-      printf("NOT IMPLEMENTED YET ---- Scenario: 1\n");
+    case 1:;
+      // two extra arguements are required rangen and mle get these and broadcast
+      char * rangen;
+      char * mle;
+      char * seed; 
+      int lrangen, lmle, lseed;
       if(worldRank == 0){
         SEXP Srangen, Smle;
         Srangen = va_arg(ap, SEXP);
         Smle = va_arg(ap, SEXP);
-        PrintValue(Smle);
-        char * rangen;
-        char * mle;
         SEXP2string(Smle, &mle);
         SEXP2string(Srangen, &rangen);
-        bootScenario1(myresults, r, ltn, SEXPvarg, lvarg, data, statistic, rangen, mle);
-
-
+        SEXP2string(install(".Random.seed"), &seed);
+        lrangen = strlen(rangen);
+        lmle = strlen(mle);
+        lseed = strlen(seed);
+      } 
+      MPI_Bcast(&lmle, 1, MPI_INT, 0, MPI_COMM_WORLD);
+      MPI_Bcast(&lrangen, 1, MPI_INT, 0, MPI_COMM_WORLD);
+      MPI_Bcast(&lseed, 1, MPI_INT, 0, MPI_COMM_WORLD);
+      if(worldRank > 0){
+         rangen = (char *)malloc((sizeof(char) * lrangen) + 1);
+         mle = (char *)malloc((sizeof(char) * lmle) + 1);
+         seed = (char *)malloc((sizeof(char) * lseed) + 1);
       }
-      // allocate array for my indices
-      for(i=0; i<nr[worldRank]*ltn;i++){
-        myresults[i] = 0.1 + worldRank; 
-      }
+      MPI_Bcast(rangen, lrangen+1, MPI_CHAR, 0, MPI_COMM_WORLD);
+      MPI_Bcast(mle, lmle+1, MPI_CHAR, 0, MPI_COMM_WORLD);
+      MPI_Bcast(seed, lseed+1, MPI_CHAR, 0, MPI_COMM_WORLD);
+      setSeed(seed); 
+      // perform the replications for the rank storing results in myresults array 
+      bootScenario1(myresults, nr, worldRank, r, ltn, SEXPvarg, lvarg, data, statistic, rangen, mle);
       break;// end of scenario 1
     case 2:
       printf("NOT IMPLEMENTED YET ---- Scenario: 2\n");
@@ -328,11 +341,9 @@ int * pbootDecomp(int world, int r){
   return(nr);
 }
  
-void bootScenario1(double * myresults,int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
-                                                      char * statistic, char * rangen, char *mle){
-  printf("mle %s\n",mle);
-  printf("rangen %s\n",rangen);
-  printf("data %s\n",data);
+void bootScenario1(double * myresults, int * nr, int rank, int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
+                                                       char * statistic, char * rangen, char *mle){
+  int i, count, k;
   SEXP Smle, Sdata, Srangen;
   PROTECT(Smle =  eval(lang2(install("eval"),
             eval(lang4(install("parse"),mkString("") , mkString(""),mkString(mle)),  R_GlobalEnv)
@@ -343,9 +354,62 @@ void bootScenario1(double * myresults,int r, int ltn, SEXP * SEXPvarg, int lvarg
   PROTECT(Srangen =  eval(lang2(install("eval"),
             eval(lang4(install("parse"),mkString("") , mkString(""),mkString(rangen)),  R_GlobalEnv)
          ), R_GlobalEnv));
-  PrintValue(Srangen);
+  
+  SEXP * rangenData; 
+  rangenData = (SEXP *)malloc(sizeof(SEXP *) * r);
+  for(i=0;i<r;i++){  
+    PROTECT(rangenData[i] = eval(lang3(Srangen, Sdata, Smle), R_GlobalEnv));
+    //PrintValue(rangenData[i]);
+  }
 
-  UNPROTECT(3);
+  int start = 0; // the start of the replications this rank needs to perform
+  for(i=0;i<rank; i++) start += nr[i];
+
+  // run the replications 
+  SEXP t, s, result_array;
+  count = start; 
+  int index = 0;
+  PROTECT(t = s = allocList(2+lvarg));
+  SET_TYPEOF(s, LANGSXP);
+  PROTECT(result_array);
+
+  for(i=0; i<nr[rank];i++){
+    t = s; // jump back to the start of the object
+    SETCAR(t, install(statistic)); t = CDR(t);
+    SETCAR(t, rangenData[count]); t = CDR(t);
+    for(k=0; k<lvarg;k++){ // add the varg SEXP objects (the ... ones)
+      SETCAR(t, SEXPvarg[k]);
+      t = CDR(t);
+    }
+    // preform the eval
+    result_array = eval(s, R_GlobalEnv);
+    // get the results out of the REALSXP vector
+    for (k=0; k<ltn;k++){
+      myresults[index] = REAL(result_array)[k];
+      index++;
+    }
+    count++;
+  }
+
+
+  UNPROTECT(5+r);
 }
 
-           
+ 
+void setSeed(char * seed){
+      char * sscmd;
+      char cmd[] = ".Random.seed =";
+      sscmd = calloc(strlen(seed)+ strlen(cmd) + 1, sizeof(char));
+      strcat(sscmd, cmd);      
+      strcat(sscmd, seed);
+    
+      SEXP Sseed;
+      PROTECT(Sseed =  eval(lang2(install("eval"),
+            eval(lang4(install("parse"),mkString("") , mkString(""),mkString(sscmd)),  R_GlobalEnv)
+         ), R_GlobalEnv));
+      eval(lang2(install("eval"),
+            eval(Sseed, R_GlobalEnv)
+        ), R_GlobalEnv); 
+
+      UNPROTECT(1);
+}         
