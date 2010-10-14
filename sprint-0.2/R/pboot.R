@@ -87,14 +87,8 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
         # Scenario: 1
         # a function (ran.gen) is used to create a random dataset for
         # each replication. 
-        # The plan:
-        # pass data, ran.gen, statistic, mle, lto and vargs to SPRINT
-        # each slave generates a complete set of random intergers
-        # then does its part.
-
         #for (r in seq_len(R)) t.star[r, ] <- statistic(ran.gen(data, 
         #    mle), ...)
-        #for (r in seq_len(R)) print(ran.gen(data, mle))
 	t.star = .Call("pboot", 1, R, lt0, vargs, strdata, strstatistic, ran.gen, mle )
     }
     else {
@@ -106,8 +100,8 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
             f <- freq.array(i)
             if (sum(m) == 0) 
                 # loop 2
-                for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, 
-                  f[r, ], ...)
+                #for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, f[r, ], ...)
+                t.star = .Call("pboot", 2, R, lt0, vargs, strdata, strstatistic, f)
             # loop 3 
             else for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, 
                 f[r, ], pred.i[r, ], ...)

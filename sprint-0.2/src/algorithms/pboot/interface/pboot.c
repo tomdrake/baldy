@@ -1,6 +1,4 @@
 /**************************************************************************
- *                                                                        *
- *  SPRINT: Simple Parallel R INTerface                                   *
  *  Copyright © 2008,2009 The University of Edinburgh                     *
  *                                                                        *
  *  This program is free software: you can redistribute it and/or modify  *
@@ -39,7 +37,7 @@ SEXP pboot(SEXP scenario,...){
   enum commandCodes commandCode;
   int scene = asInteger(scenario);
   va_list ap;
-
+  int c;
   // get the function arguments common to all scenarios 
   // 1, R, lt0, vargs, strdata, strstatistic
   va_start(ap, scenario); 
@@ -78,7 +76,15 @@ SEXP pboot(SEXP scenario,...){
       mle = va_arg(ap, SEXP);
       response = boot(1, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), rangen, mle);
       break; 
-    case 2:
+    case 2:;
+      SEXP f; 
+      f = va_arg(ap, SEXP); 
+      c = ncols(f); // number of columns in the index
+      int * find;
+      find = (int *)malloc(sizeof(int) * r * c);
+      Rmatrix2Carray(f, find, r, c);
+      response = boot(2, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, find);
+      free(find);
       break; 
     case 3:
       break; 
@@ -94,7 +100,7 @@ SEXP pboot(SEXP scenario,...){
       ;// work around for gcc bug
       // retrieve function arguments 
       SEXP ind = va_arg(ap, SEXP);
-      int c = ncols(ind); // replications are the number of columns in the index
+      c = ncols(ind); // replications are the number of columns in the index
       // convert the ind from (horrible) SEXP format to C array
       int * cind;
       cind = (int *)malloc(sizeof(int) * r * c);
