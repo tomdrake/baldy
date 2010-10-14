@@ -94,6 +94,7 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
 
         #for (r in seq_len(R)) t.star[r, ] <- statistic(ran.gen(data, 
         #    mle), ...)
+        #for (r in seq_len(R)) print(ran.gen(data, mle))
 	t.star = .Call("pboot", 1, R, lt0, vargs, strdata, strstatistic, ran.gen, mle )
     }
     else {
