@@ -31,6 +31,8 @@
 
 void SEXP2string(SEXP Sobject, char ** strobj);
 int * pbootDecomp(int world, int r);
+void bootScenario1(double * myresults,int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
+                                                      char * statistic, char * rangen, char *mle);
 
 int boot(int scenario,...)
 {
@@ -131,7 +133,13 @@ int boot(int scenario,...)
         Srangen = va_arg(ap, SEXP);
         Smle = va_arg(ap, SEXP);
         PrintValue(Smle);
-        
+        char * rangen;
+        char * mle;
+        SEXP2string(Smle, &mle);
+        SEXP2string(Srangen, &rangen);
+        bootScenario1(myresults, r, ltn, SEXPvarg, lvarg, data, statistic, rangen, mle);
+
+
       }
       // allocate array for my indices
       for(i=0; i<nr[worldRank]*ltn;i++){
@@ -292,10 +300,11 @@ void SEXP2string(SEXP Sobject, char ** strobj){
     size += strlen(CHAR(STRING_ELT(dSobject,i)));
   }
   // malloc the memory then fill it up
-  *strobj = calloc(size+1, sizeof(char));
+  *strobj = calloc(size+1+lobject, sizeof(char));
 
   for(i=0;i<lobject; i++){
     strcat(*strobj, CHAR(STRING_ELT(dSobject,i)));
+    strcat(*strobj, "\n"); // needed for objects that are functions
   }
 
   UNPROTECT(1);
@@ -317,4 +326,26 @@ int * pbootDecomp(int world, int r){
    nr[i]++;
   }
   return(nr);
-}           
+}
+ 
+void bootScenario1(double * myresults,int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
+                                                      char * statistic, char * rangen, char *mle){
+  printf("mle %s\n",mle);
+  printf("rangen %s\n",rangen);
+  printf("data %s\n",data);
+  SEXP Smle, Sdata, Srangen;
+  PROTECT(Smle =  eval(lang2(install("eval"),
+            eval(lang4(install("parse"),mkString("") , mkString(""),mkString(mle)),  R_GlobalEnv)
+         ), R_GlobalEnv));
+  PROTECT(Sdata =  eval(lang2(install("eval"),
+            eval(lang4(install("parse"),mkString("") , mkString(""),mkString(data)),  R_GlobalEnv)
+         ), R_GlobalEnv));
+  PROTECT(Srangen =  eval(lang2(install("eval"),
+            eval(lang4(install("parse"),mkString("") , mkString(""),mkString(rangen)),  R_GlobalEnv)
+         ), R_GlobalEnv));
+  PrintValue(Srangen);
+
+  UNPROTECT(3);
+}
+
+           
