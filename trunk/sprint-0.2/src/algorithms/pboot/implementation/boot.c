@@ -36,6 +36,8 @@ void bootScenario1(double * myresults, int * nr, int rank, int r, int ltn, SEXP 
                                                       char * statistic, char * rangen, char *mle);
 void bootScenario2(double * myresults, int * nr, int rank, int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
                                                       char * statistic, int c, int * f);
+void bootScenario3(double * myresults, int * nr, int rank, int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
+                                                      char * statistic, int c, int * f, int * pred );
 
 int boot(int scenario,...)
 {
@@ -128,6 +130,9 @@ int boot(int scenario,...)
   double * myresults ;
   myresults = (double *)malloc(sizeof(double) * nr[worldRank] * ltn);
   
+  int * f;
+  int * myf;
+
   switch(scenario) {
     case 1:;
       // two extra arguements are required rangen and mle get these and broadcast
@@ -162,14 +167,12 @@ int boot(int scenario,...)
       bootScenario1(myresults, nr, worldRank, r, ltn, SEXPvarg, lvarg, data, statistic, rangen, mle);
       break;// end of scenario 1
     case 2:;
-      int * f;
       if(worldRank == 0){
         c = va_arg(ap, int);
         f = va_arg(ap, int *);
       }
       MPI_Bcast(&c, 1, MPI_INT, 0, MPI_COMM_WORLD);
       // decompose the f indice
-      int * myf; // my portion of the index
       myf = (int *)malloc(sizeof(int) * c * nr[worldRank]) ; 
       
       if(worldRank == 0){ // send indice decomposition to nodes
@@ -185,11 +188,32 @@ int boot(int scenario,...)
       bootScenario2(myresults, nr, worldRank, r, ltn, SEXPvarg, lvarg, data, statistic, c, myf);
       free(myf);
       break;// end of scenario 2
-    case 3:
+    case 3:;
       printf("NOT IMPLEMENTED YET ---- Scenario: 3\n");
-      for(i=0; i<nr[worldRank]*ltn;i++){
-        myresults[i] = i; 
+      int * pred;
+      if(worldRank == 0){
+        c = va_arg(ap, int);
+        f = va_arg(ap, int *);
+        pred =  va_arg(ap, int *);
       }
+      MPI_Bcast(&c, 1, MPI_INT, 0, MPI_COMM_WORLD);
+      if(worldRank > 0) pred = (int *)malloc(sizeof(int) * r) ;
+      MPI_Bcast(pred, r, MPI_INT, 0, MPI_COMM_WORLD);
+      // decompose the f indice
+      myf = (int *)malloc(sizeof(int) * c * nr[worldRank]) ;
+
+      if(worldRank == 0){ // send indice decomposition to nodes
+        count = nr[0] * c; // skip those for master
+        for(i=0; i<(nr[0] *c);i++) myf[i] = f[i];// fill in the masters
+        for(i=1; i<worldSize;i++){
+          MPI_Send(&f[count], nr[i] * c, MPI_INT, i, 4, MPI_COMM_WORLD);
+          count += (nr[i] * c);
+        }
+      } else { // receive my indices decomposition
+          MPI_Recv(myf, nr[worldRank] * c, MPI_INT, 0, 4, MPI_COMM_WORLD,&stat);
+      }
+      bootScenario3(myresults, nr, worldRank, r, ltn, SEXPvarg, lvarg, data, statistic, c, myf, pred);
+      free(myf);
       break;// end of scenario 3
     case 4:
       printf("NOT IMPLEMENTED YET ---- Scenario: 4\n");
@@ -455,6 +479,54 @@ void bootScenario2(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
   UNPROTECT(5);
 }
 
+
+void bootScenario3(double * myresults,int * nr, int rank, int r, int ltn,SEXP * SEXPvarg, int lvarg, char * data,
+                                                             char * statistic, int c, int * myf, int * pred){
+  // perform my ranks replications
+  int i,j,k;
+  SEXP rind, t, s,  result_array, Sdata, pdata, Spred;
+  PROTECT(rind = allocVector(INTSXP,c)); // will be used to store each replications ind
+  PROTECT(Spred ); // will be used to store each replications ind
+  PROTECT(t = s = allocList(3+lvarg));
+  SET_TYPEOF(s, LANGSXP);
+  PROTECT(result_array);
+  //for(i=0;i<r;i++){
+  //    INTEGER(Spred)[i] = pred[i];
+  //}
+  //PrintValue(Spred); 
+
+  PROTECT(pdata = eval(lang4(install("parse"),mkString("") , mkString(""),mkString(data)),  R_GlobalEnv));
+  PROTECT(Sdata = eval(lang2(install("eval"),pdata), R_GlobalEnv));
+  int count = 0;
+  int index = 0;
+  for(i=0; i<nr[rank];i++){
+    // build the indices for this replication
+    for(j=0;j<c;j++){
+      INTEGER(rind)[j] = myf[count];
+      count++;
+    }
+    Spred = ScalarInteger(pred[i]);
+    // build the expression for this replication
+    t = s; // jump back to the start of the object
+    SETCAR(t, install(statistic)); t = CDR(t);
+    SETCAR(t, Sdata); t = CDR(t);
+    SETCAR(t, rind); t = CDR(t);
+    SETCAR(t, Spred); t = CDR(t);
+    for(k=0; k<lvarg;k++){ // add the varg SEXP objects (the ... ones)
+      SETCAR(t, SEXPvarg[k]);
+    t = CDR(t);
+    }
+    // preform the eval
+    PrintValue(s);
+    result_array = eval(s, R_GlobalEnv);
+    // get the results out of the REALSXP vector
+    for (k=0; k<ltn;k++){
+      myresults[index] =REAL(result_array)[k];
+      index++;
+    }
+  }
+  UNPROTECT(6);
+}
  
 void setSeed(char * seed){
       char * sscmd;

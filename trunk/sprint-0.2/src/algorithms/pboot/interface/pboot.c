@@ -69,6 +69,10 @@ SEXP pboot(SEXP scenario,...){
   // intialise the memory to store the results
   func_results = (double *)malloc(sizeof(double) * r * ltn); 
 
+  int * find;
+  SEXP f; 
+
+
   switch(scene) {   
     case 1:;
       SEXP rangen, mle;
@@ -77,16 +81,25 @@ SEXP pboot(SEXP scenario,...){
       response = boot(1, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), rangen, mle);
       break; 
     case 2:;
-      SEXP f; 
       f = va_arg(ap, SEXP); 
       c = ncols(f); // number of columns in the index
-      int * find;
       find = (int *)malloc(sizeof(int) * r * c);
       Rmatrix2Carray(f, find, r, c);
       response = boot(2, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, find);
       free(find);
       break; 
-    case 3:
+    case 3:;
+      SEXP Spred; 
+      f = va_arg(ap, SEXP); 
+      Spred = va_arg(ap, SEXP); 
+      c = ncols(f); // number of columns in the index
+      int * pred;
+      find = (int *)malloc(sizeof(int) * r * c);
+      pred = (int *)malloc(sizeof(int) * r);
+      Rmatrix2Carray(f, find, r, c);
+      Rmatrix2Carray(Spred, pred, r, 1);
+      response = boot(3, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, find, pred);
+      free(find);
       break; 
     case 4:
       break; 
