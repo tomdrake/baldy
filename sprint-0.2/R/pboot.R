@@ -102,9 +102,10 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
                 # loop 2
                 #for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, f[r, ], ...)
                 t.star = .Call("pboot", 2, R, lt0, vargs, strdata, strstatistic, f)
-            # loop 3 
-            else for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, 
-                f[r, ], pred.i[r, ], ...)
+            else 
+              # loop 3 
+              #for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, f[r, ], pred.i[r, ], ...)
+              t.star = .Call("pboot", 3, R, lt0, vargs, strdata, strstatistic, f, pred.i)
         }
         else if (stype == "w") {
             f <- freq.array(i)
