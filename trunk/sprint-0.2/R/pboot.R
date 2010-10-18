@@ -111,25 +111,29 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
             f <- freq.array(i)
             if (sum(m) == 0) 
                 # loop 4
-                for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, 
-                  f[r, ]/ns, ...)
+                #for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, 
+                #  f[r, ]/ns, ...)
+                t.star = .Call("pboot", 4, R, lt0, vargs, strdata, strstatistic)
             # loop 5
-            else for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, 
-                f[r, ]/ns, pred.i[r, ], ...)
+            #else for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, 
+            #    f[r, ]/ns, pred.i[r, ], ...)
+            t.star = .Call("pboot", 5, R, lt0, vargs, strdata, strstatistic)
         }
         else if (sum(m) > 0) {
             # loop 6 
-            for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, 
-                i[r, ], pred.i[r, ], ...)
+            #for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, 
+            #    i[r, ], pred.i[r, ], ...)
+            t.star = .Call("pboot", 6, R, lt0, vargs, strdata, strstatistic)
         }
         else if (simple) {
             # loop 7 
-            print("loop 7")
-	    for (r in seq_len(sum(R))) {
-                inds <- boot:::index.array(n, 1, sim, strata, m, L, 
-                  weights)
-                t.star[r, ] <- statistic(data, inds, ...)
-            }
+            #print("loop 7")
+	    #for (r in seq_len(sum(R))) {
+            #    inds <- boot:::index.array(n, 1, sim, strata, m, L, 
+            #      weights)
+            #    t.star[r, ] <- statistic(data, inds, ...)
+            #}
+            t.star = .Call("pboot", 7, R, lt0, vargs, strdata, strstatistic)
         }
         else {
 	    # loop 8 

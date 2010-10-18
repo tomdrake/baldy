@@ -38,7 +38,7 @@ test.bootExample1 <- function() {
   a = boot(city, ratio, R=999, stype="w")
   set.seed(1337)
   b = pboot(city, ratio, R=999, stype="w")
-  checkEquals(a,b,"Bootstrap examples 1")
+  checkEquals(a,b,"Bootstrap examples 1, weight based stype = w")
 
 }
 

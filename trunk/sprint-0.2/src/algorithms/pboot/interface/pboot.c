@@ -93,21 +93,27 @@ SEXP pboot(SEXP scenario,...){
       f = va_arg(ap, SEXP); 
       Spred = va_arg(ap, SEXP); 
       c = ncols(f); // number of columns in the index
+      int m = ncols(Spred); 
       int * pred;
       find = (int *)malloc(sizeof(int) * r * c);
-      pred = (int *)malloc(sizeof(int) * r);
+      pred = (int *)malloc(sizeof(int) * r * m);
       Rmatrix2Carray(f, find, r, c);
-      Rmatrix2Carray(Spred, pred, r, 1);
-      response = boot(3, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, find, pred);
+      Rmatrix2Carray(Spred, pred, r, m);
+      response = boot(3, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, find, pred, m);
       free(find);
+      free(pred);
       break; 
     case 4:
+      response = boot(4, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)));
       break; 
     case 5:
+      response = boot(5, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)));
       break; 
     case 6:
+      response = boot(6, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)));
       break; 
     case 7:
+      response = boot(7, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)));
       break; 
     case 8:
       ;// work around for gcc bug
