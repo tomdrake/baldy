@@ -71,8 +71,9 @@ SEXP pboot(SEXP scenario,...){
   func_results = (double *)malloc(sizeof(double) * r * ltn); 
 
   int * find;
+  int * ind;
   double * wind;
-  SEXP f, w, Spred;
+  SEXP f, w, Spred, Sind;
   int m; 
   int * pred;
 
@@ -126,7 +127,17 @@ SEXP pboot(SEXP scenario,...){
       free(pred);
       break; 
     case 6:
-      response = boot(6, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)));
+      Sind = va_arg(ap, SEXP);
+      Spred = va_arg(ap, SEXP);
+      m = ncols(Spred);
+      c = ncols(Sind);
+      ind = (int *)malloc(sizeof(int) * r * c);
+      pred = (int *)malloc(sizeof(int) * r * m);
+      Rmatrix2Carray(Spred, pred, r, m);
+      Rmatrix2Carray(Sind, ind, r, c);
+      response = boot(6, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, ind, pred, m);
+      free(ind);
+      free(pred);
       break; 
     case 7:
       response = boot(7, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)));
