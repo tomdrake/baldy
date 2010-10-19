@@ -22,6 +22,7 @@
 extern int boot(int n,...);
 void Carray2Rmatrix(double * array, SEXP matrix, int r, int c);
 void Rmatrix2Carray(SEXP matrix, int * array, int r, int c); 
+void Rmatrix2CDBLarray(SEXP matrix, double * array, int r, int c); 
 
 /* ******************************************************** *
  *  The stub for the R side of a very simple test command.  *
@@ -70,7 +71,8 @@ SEXP pboot(SEXP scenario,...){
   func_results = (double *)malloc(sizeof(double) * r * ltn); 
 
   int * find;
-  SEXP f; 
+  double * wind;
+  SEXP f, w; 
 
 
   switch(scene) {   
@@ -104,7 +106,11 @@ SEXP pboot(SEXP scenario,...){
       free(pred);
       break; 
     case 4:
-      response = boot(4, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)));
+      w = va_arg(ap, SEXP);
+      c = ncols(w); // number of columns in the index
+      wind = (double *)malloc(sizeof(double) * r * c);
+      Rmatrix2CDBLarray(w, wind, r, c);
+      response = boot(4, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, wind);
       break; 
     case 5:
       response = boot(5, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)));
@@ -155,6 +161,21 @@ void Rmatrix2Carray(SEXP matrix, int * array, int r, int c){
     }
   }
 }
+
+void Rmatrix2CDBLarray(SEXP matrix, double * array, int r, int c){
+  int i,j;
+  int count = 0;
+  int indx = 0;
+  for(i=0;i<r;i++){
+    indx = i;
+    for(j=0;j<c;j++){
+      array[count] = REAL(matrix)[indx];
+      count++;
+      indx += r;
+    }
+  }
+}
+
 
 void Carray2Rmatrix(double * array, SEXP matrix, int r, int c){
   int i, j; 
