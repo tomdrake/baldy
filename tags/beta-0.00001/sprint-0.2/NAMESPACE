@@ -1,0 +1,9 @@
+# Namespace file for sprint 
+
+useDynLib(sprint)
+
+export(ptest)
+export(pboot)
+export(pcor)
+export(pmaxT)
+export(pterminate)
