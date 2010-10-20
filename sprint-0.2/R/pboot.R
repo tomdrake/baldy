@@ -124,22 +124,22 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
             # loop 6 
             #for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, 
             #    i[r, ], pred.i[r, ], ...)
-            t.star = .Call("pboot", 6, R, lt0, vargs, strdata, strstatistic, i, pred.i)
+            t.star = .Call("pboot", 3, R, lt0, vargs, strdata, strstatistic, i, pred.i)
         }
         else if (simple) {
             # loop 7 
-            #print("loop 7")
-	    #for (r in seq_len(sum(R))) {
-            #    inds <- boot:::index.array(n, 1, sim, strata, m, L, 
-            #      weights)
-            #    t.star[r, ] <- statistic(data, inds, ...)
-            #}
-            t.star = .Call("pboot", 7, R, lt0, vargs, strdata, strstatistic)
+            # this option is meant to be for reduced memory usage but for pboot
+            # it uses just the same amount of memory (and might be slower)
+            inds = matrix(ncol=n, nrow=R)
+	    for (r in seq_len(sum(R))) {
+                inds[r,] <- boot:::index.array(n, 1, sim, strata, m, L, 
+                  weights)
+            }
+            t.star = .Call("pboot", 8, R, lt0, vargs, strdata, strstatistic, inds)
         }
         else {
 	    # loop 8 
             #for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, i[r, ], ...)
-	    #print("loop 8")
 	    t.star = .Call("pboot", 8, R, lt0, vargs, strdata, strstatistic, i)
         }
     }
