@@ -70,3 +70,8 @@ Gives this error
 ** testing if installed package can be loaded
 /usr/lib/R/bin/exec/R: symbol lookup error: /usr/lib/openmpi/lib/openmpi/mca_paffinity_linux.so: undefined symbol: mca_base_param_reg_int
 }}}
+
+
+= Scientific Linux 5.5 64bit = 
+
+`# yum install R-devel openmpi openmpi-devel opemmpi-libs`
