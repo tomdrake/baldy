@@ -42,8 +42,6 @@ void bootScenario4(double * myresults, int * nr, int rank, int r, int ltn, SEXP 
                                                       char * statistic, int c, double * w);
 void bootScenario5(double * myresults, int * nr, int rank, int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
                                                       char * statistic, int c, double * w, int * pred, int m);
-void bootScenario8(double * myresults, int * nr, int rank, int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
-                                                      char * statistic, int c, int * myind);
 
 int boot(int scenario,...)
 {
@@ -432,7 +430,6 @@ void bootScenario1(double * myresults, int * nr, int rank, int r, int ltn, SEXP 
   int index = 0;
   PROTECT(t = s = allocList(2+lvarg));
   SET_TYPEOF(s, LANGSXP);
-  PROTECT(result_array);
 
   for(i=0; i<nr[rank];i++){
     t = s; // jump back to the start of the object
@@ -453,7 +450,7 @@ void bootScenario1(double * myresults, int * nr, int rank, int r, int ltn, SEXP 
   }
 
 
-  UNPROTECT(5+r);
+  UNPROTECT(4+r);
 }
 
 void bootScenario2(double * myresults,int * nr, int rank, int r, int ltn,SEXP * SEXPvarg, int lvarg, char * data,
@@ -464,7 +461,6 @@ void bootScenario2(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
   PROTECT(rind = allocVector(INTSXP,c)); // will be used to store each replications ind
   PROTECT(t = s = allocList(3+lvarg));
   SET_TYPEOF(s, LANGSXP);
-  PROTECT(result_array);
 
   PROTECT(pdata = eval(lang4(install("parse"),mkString("") , mkString(""),mkString(data)),  R_GlobalEnv));
   PROTECT(Sdata = eval(lang2(install("eval"),pdata), R_GlobalEnv));
@@ -494,7 +490,7 @@ void bootScenario2(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
       index++;
     }
   }
-  UNPROTECT(5);
+  UNPROTECT(4);
 }
 
 
@@ -507,7 +503,6 @@ void bootScenario3(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
   PROTECT(Spred = allocVector(INTSXP,m)); // will be used to store each replications ind
   PROTECT(t = s = allocList(4+lvarg));
   SET_TYPEOF(s, LANGSXP);
-  PROTECT(result_array);
 
   PROTECT(pdata = eval(lang4(install("parse"),mkString("") , mkString(""),mkString(data)),  R_GlobalEnv));
   PROTECT(Sdata = eval(lang2(install("eval"),pdata), R_GlobalEnv));
@@ -544,7 +539,7 @@ void bootScenario3(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
       index++;
     }
   }
-  UNPROTECT(6);
+  UNPROTECT(5);
 }
 
 void bootScenario4(double * myresults,int * nr, int rank, int r, int ltn,SEXP * SEXPvarg, int lvarg, char * data,
@@ -555,7 +550,6 @@ void bootScenario4(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
   PROTECT(rind = allocVector(REALSXP,c)); // will be used to store each replications ind
   PROTECT(t = s = allocList(3+lvarg));
   SET_TYPEOF(s, LANGSXP);
-  PROTECT(result_array);
 
   PROTECT(pdata = eval(lang4(install("parse"),mkString("") , mkString(""),mkString(data)),  R_GlobalEnv));
   PROTECT(Sdata = eval(lang2(install("eval"),pdata), R_GlobalEnv));
@@ -585,7 +579,7 @@ void bootScenario4(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
       index++;
     }
   }
-  UNPROTECT(5);
+  UNPROTECT(4);
 }
 
 void bootScenario5(double * myresults,int * nr, int rank, int r, int ltn,SEXP * SEXPvarg, int lvarg, char * data,
@@ -597,7 +591,6 @@ void bootScenario5(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
   PROTECT(Spred = allocVector(INTSXP,m)); // will be used to store each replications ind
   PROTECT(t = s = allocList(4+lvarg));
   SET_TYPEOF(s, LANGSXP);
-  PROTECT(result_array);
 
   PROTECT(pdata = eval(lang4(install("parse"),mkString("") , mkString(""),mkString(data)),  R_GlobalEnv));
   PROTECT(Sdata = eval(lang2(install("eval"),pdata), R_GlobalEnv));
@@ -627,48 +620,6 @@ void bootScenario5(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
     }
     // preform the eval
     //PrintValue(s);
-    result_array = eval(s, R_GlobalEnv);
-    // get the results out of the REALSXP vector
-    for (k=0; k<ltn;k++){
-      myresults[index] =REAL(result_array)[k];
-      index++;
-    }
-  }
-  UNPROTECT(6);
-}
-
-
-void bootScenario8(double * myresults,int * nr, int rank, int r, int ltn,SEXP * SEXPvarg, int lvarg, char * data,
-                                                             char * statistic, int c, int * myind){
-  // perform my ranks replications
-  int i,j,k;
-  SEXP rind, t, s,  result_array, Sdata, pdata;
-  PROTECT(rind = allocVector(INTSXP,c)); // will be used to store each replications ind
-  PROTECT(t = s = allocList(3+lvarg));
-  SET_TYPEOF(s, LANGSXP);
-  PROTECT(result_array);
-
-  PROTECT(pdata = eval(lang4(install("parse"),mkString("") , mkString(""),mkString(data)),  R_GlobalEnv));
-  PROTECT(Sdata = eval(lang2(install("eval"),pdata), R_GlobalEnv));
-  int count = 0;
-  int index = 0;
-  for(i=0; i<nr[rank];i++){
-    // build the indices for this replication
-    for(j=0;j<c;j++){
-      INTEGER(rind)[j] = myind[count];
-      count++;
-    }
-
-    // build the expression for this replication
-    t = s; // jump back to the start of the object
-    SETCAR(t, install(statistic)); t = CDR(t);
-    SETCAR(t, Sdata); t = CDR(t);
-    SETCAR(t, rind); t = CDR(t);
-    for(k=0; k<lvarg;k++){ // add the varg SEXP objects (the ... ones)
-      SETCAR(t, SEXPvarg[k]);
-    t = CDR(t);
-    }
-    // preform the eval
     result_array = eval(s, R_GlobalEnv);
     // get the results out of the REALSXP vector
     for (k=0; k<ltn;k++){
