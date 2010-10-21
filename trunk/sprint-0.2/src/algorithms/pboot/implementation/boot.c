@@ -440,17 +440,17 @@ void bootScenario1(double * myresults, int * nr, int rank, int r, int ltn, SEXP 
       t = CDR(t);
     }
     // preform the eval
-    result_array = eval(s, R_GlobalEnv);
+    PROTECT(result_array = eval(s, R_GlobalEnv));
     // get the results out of the REALSXP vector
     for (k=0; k<ltn;k++){
       myresults[index] = REAL(result_array)[k];
       index++;
     }
     count++;
+    UNPROTECT(1);
   }
-
-
   UNPROTECT(4+r);
+  free(rangenData);
 }
 
 void bootScenario2(double * myresults,int * nr, int rank, int r, int ltn,SEXP * SEXPvarg, int lvarg, char * data,
@@ -483,12 +483,13 @@ void bootScenario2(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
     t = CDR(t);
     }
     // preform the eval
-    result_array = eval(s, R_GlobalEnv);
+    PROTECT(result_array = eval(s, R_GlobalEnv));
     // get the results out of the REALSXP vector
     for (k=0; k<ltn;k++){
       myresults[index] =REAL(result_array)[k];
       index++;
     }
+    UNPROTECT(1);
   }
   UNPROTECT(4);
 }
@@ -532,12 +533,13 @@ void bootScenario3(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
     }
     // preform the eval
     //PrintValue(s);
-    result_array = eval(s, R_GlobalEnv);
+    PROTECT(result_array = eval(s, R_GlobalEnv));
     // get the results out of the REALSXP vector
     for (k=0; k<ltn;k++){
       myresults[index] =REAL(result_array)[k];
       index++;
     }
+    UNPROTECT(1);
   }
   UNPROTECT(5);
 }
@@ -572,12 +574,13 @@ void bootScenario4(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
     t = CDR(t);
     }
     // preform the eval
-    result_array = eval(s, R_GlobalEnv);
+    PROTECT(result_array = eval(s, R_GlobalEnv));
     // get the results out of the REALSXP vector
     for (k=0; k<ltn;k++){
       myresults[index] =REAL(result_array)[k];
       index++;
     }
+    UNPROTECT(1);
   }
   UNPROTECT(4);
 }
@@ -620,12 +623,13 @@ void bootScenario5(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
     }
     // preform the eval
     //PrintValue(s);
-    result_array = eval(s, R_GlobalEnv);
+    PROTECT(result_array = eval(s, R_GlobalEnv));
     // get the results out of the REALSXP vector
     for (k=0; k<ltn;k++){
       myresults[index] =REAL(result_array)[k];
       index++;
     }
+    UNPROTECT(1);
   }
   UNPROTECT(5);
 }
