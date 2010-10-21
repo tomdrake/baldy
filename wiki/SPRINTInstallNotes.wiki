@@ -78,3 +78,17 @@ Gives this error
 
 `# mpi-selector --set openmpi-1.4-gcc-x86_64` or you could use 
 `# mpi-selector-menu`
+`R CMD INSTALL sprint-0.3`
+{{{
+
+ *** caught segfault ***
+address (nil), cause 'unknown'
+
+Traceback:
+ 1: dyn.load(file, DLLpath = DLLpath, ...)
+ 2: library.dynam(lib, package, package.lib)
+ 3: loadNamespace(package, c(which.lib.loc, lib.loc), keep.source = keep.source)
+ 4: doTryCatch(return(expr), name, parentenv, handler)
+ 5: tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6: tryCatchList(expr, classes, parentenv, handlers)
+}}}
