@@ -75,3 +75,6 @@ Gives this error
 = Scientific Linux 5.5 64bit = 
 
 `# yum install R-devel openmpi openmpi-devel opemmpi-libs`
+
+`# mpi-selector --set openmpi-1.4-gcc-x86_64` or you could use 
+`# mpi-selector-menu`
