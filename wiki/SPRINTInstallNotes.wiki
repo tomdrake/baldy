@@ -73,12 +73,17 @@ Gives this error
 
 
 = Scientific Linux 5.5 64bit = 
+== The default version of R does not work ==
+I think it is related to not being built with mpicc. Here are the steps if you want to try it. 
 
 `# yum install R-devel openmpi openmpi-devel opemmpi-libs`
 
 `# mpi-selector --set openmpi-1.4-gcc-x86_64` or you could use 
+
 `# mpi-selector-menu`
-`R CMD INSTALL sprint-0.3`
+
+`R CMD INSTALL sprint-0.2`
+
 {{{
 
  *** caught segfault ***
@@ -92,3 +97,32 @@ Traceback:
  5: tryCatchOne(expr, names, parentenv, handlers[[1L]])
  6: tryCatchList(expr, classes, parentenv, handlers)
 }}}
+== Compiling R ==
+This does work, and you dont need root access if mpi is installed.
+`# yum install openmpi openmpi-devel opemmpi-libs`
+
+`$ export CC=mpicc`
+
+`$ wget http://ftp.heanet.ie/mirrors/cran.r-project.org/src/base/R-2/R-2.12.0.tar.gz`
+
+`$ tar xvfz R-2.12.0.tar.gz`
+
+`$ cd R-2.12.0`
+
+`$ ./configure --prefix=$HOME/local/`
+
+`$ make`
+
+`$ make install`
+
+Add this to your .bashrc
+{{{
+export MPI_HOME=$HOME/local/
+export PATH=$HOME/local/bin/:$PATH
+export LD_LIBRARY_PATH=$MPI_HOME/lib/:$LD_LIBRARY_PATH
+}}}
+
+`$ source .bashrc`
+ 
+`$ R CMD INSTALL sprint-x.x`
+
