@@ -50,6 +50,7 @@ void R_init_sprint(DllInfo *Dllinfo) {
     char *fake_argv[1];
     char *fake_argv0 = "R";
     int response;
+    void *dlhandle;
 
     MPI_Initialized(&flag);
     if (flag) {
@@ -58,8 +59,12 @@ void R_init_sprint(DllInfo *Dllinfo) {
     }
     else {
 
-#ifdef OPENMPI
-        dlopen("libmpi.so.0", RTLD_GLOBAL);
+#ifdef OPEN_MPI
+        dlhandle = dlopen("libmpi.so.0", RTLD_GLOBAL | RTLD_LAZY);
+        if ( NULL == dlhandle ) {
+            ERR("%s\n", dlerror());
+            return;
+        }
 #endif
 
         fake_argv[0] = (char *)&fake_argv0;
