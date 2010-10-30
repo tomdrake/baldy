@@ -72,6 +72,7 @@ SEXP pboot(SEXP scenario,...){
 
   int * find;
   int * ind;
+  int * windt;
   double * wind;
   SEXP f, w, Spred, Sind;
   int m; 
@@ -108,10 +109,10 @@ SEXP pboot(SEXP scenario,...){
     case 4:
       w = va_arg(ap, SEXP);
       c = ncols(w); // number of columns in the index
-      wind = (int *)malloc(sizeof(int) * r * c);
-      Rmatrix2Carray(w, wind, r, c);
-      response = boot(4, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, wind);
-      free(wind);
+      windt = (int *)malloc(sizeof(int) * r * c);
+      Rmatrix2Carray(w, windt, r, c);
+      response = boot(4, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, windt);
+      free(windt);
       break; 
     case 5:;
       w = va_arg(ap, SEXP);
