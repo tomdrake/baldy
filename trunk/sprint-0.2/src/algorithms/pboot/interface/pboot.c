@@ -108,8 +108,8 @@ SEXP pboot(SEXP scenario,...){
     case 4:
       w = va_arg(ap, SEXP);
       c = ncols(w); // number of columns in the index
-      wind = (double *)malloc(sizeof(double) * r * c);
-      Rmatrix2CDBLarray(w, wind, r, c);
+      wind = (int *)malloc(sizeof(int) * r * c);
+      Rmatrix2Carray(w, wind, r, c);
       response = boot(4, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, wind);
       free(wind);
       break; 
