@@ -118,7 +118,7 @@ pboot <- function (data, statistic, R, sim = "ordinary", stype = "i",
               # loop 5
               #else for (r in seq_len(sum(R))) t.star[r, ] <- statistic(data, 
               #    f[r, ]/ns, pred.i[r, ], ...)
-              t.star = .Call("pboot", 5, R, lt0, vargs, strdata, strstatistic, f/ns, pred.i )
+              t.star = .Call("pboot", 5, R, lt0, vargs, strdata, strstatistic, f, pred.i )
         }
         else if (sum(m) > 0) {
             # loop 6 

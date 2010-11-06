@@ -41,7 +41,7 @@ void bootScenario3(double * myresults, int * nr, int rank, int r, int ltn, SEXP 
 void bootScenario4(double * myresults, int * nr, int rank, int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
                                                       char * statistic, int c, int * w);
 void bootScenario5(double * myresults, int * nr, int rank, int r, int ltn, SEXP * SEXPvarg, int lvarg, char * data,
-                                                      char * statistic, int c, double * w, int * pred, int m);
+                                                      char * statistic, int c, int * w, int * pred, int m);
 
 int boot(int scenario,...)
 {
@@ -138,10 +138,8 @@ int boot(int scenario,...)
   int * myf;
   int * ind;
   int * myind;
-  double * w;
-  double * myw;
-  int * mywt;
-  int * wt;
+  int * myw;
+  int * w;
   int * pred;
   int * mypred;
   int m;
@@ -244,29 +242,29 @@ int boot(int scenario,...)
     case 4:
       if(worldRank == 0){
         c = va_arg(ap, int);
-        wt = va_arg(ap, int *);
+        w = va_arg(ap, int *);
       }
       MPI_Bcast(&c, 1, MPI_INT, 0, MPI_COMM_WORLD);
       // decompose the f indice
-      mywt = (int *)malloc(sizeof(int) * c * nr[worldRank]) ;
+      myw = (int *)malloc(sizeof(int) * c * nr[worldRank]) ;
 
       if(worldRank == 0){ // send indice decomposition to nodes
         count = nr[0] * c; // skip those for master
-        for(i=0; i<(nr[0] *c);i++) mywt[i] = wt[i];// fill in the masters
+        for(i=0; i<(nr[0] *c);i++) myw[i] = w[i];// fill in the masters
         for(i=1; i<worldSize;i++){
-          MPI_Send(&wt[count], nr[i] * c, MPI_INT, i, 6, MPI_COMM_WORLD);
+          MPI_Send(&w[count], nr[i] * c, MPI_INT, i, 6, MPI_COMM_WORLD);
           count += (nr[i] * c);
         }
       } else { // receive my indices decomposition
-          MPI_Recv(mywt, nr[worldRank] * c, MPI_INT, 0, 6, MPI_COMM_WORLD,&stat);
+          MPI_Recv(myw, nr[worldRank] * c, MPI_INT, 0, 6, MPI_COMM_WORLD,&stat);
       }
-      bootScenario4(myresults, nr, worldRank, r, ltn, SEXPvarg, lvarg, data, statistic, c, mywt);
+      bootScenario4(myresults, nr, worldRank, r, ltn, SEXPvarg, lvarg, data, statistic, c, myw);
       free(myw);
       break;// end of scenario 4
     case 5:
       if(worldRank == 0){
         c = va_arg(ap, int);
-        w = va_arg(ap, double *);
+        w = va_arg(ap, int *);
         pred =  va_arg(ap, int *);
         m =  va_arg(ap, int);
       }
@@ -274,18 +272,18 @@ int boot(int scenario,...)
       MPI_Bcast(&m, 1, MPI_INT, 0, MPI_COMM_WORLD);
       if(worldRank > 0) pred = (int *)malloc(sizeof(int) * r * m) ;
       // decompose the f indice
-      myw = (double *)malloc(sizeof(double) * c * nr[worldRank]) ;
+      myw = (int *)malloc(sizeof(w) * c * nr[worldRank]) ;
       mypred = (int *)malloc(sizeof(int) * m * nr[worldRank]) ;
       // decompose the f array
       if(worldRank == 0){ // send indice decomposition to nodes
         count = nr[0] * c; // skip those for master
         for(i=0; i<(nr[0] *c);i++) myw[i] = w[i];// fill in the masters
         for(i=1; i<worldSize;i++){
-          MPI_Send(&w[count], nr[i] * c, MPI_DOUBLE, i, 4, MPI_COMM_WORLD);
+          MPI_Send(&w[count], nr[i] * c, MPI_INT, i, 4, MPI_COMM_WORLD);
           count += (nr[i] * c);
         }
       } else { // receive my indices decomposition
-          MPI_Recv(myw, nr[worldRank] * c, MPI_DOUBLE, 0, 4, MPI_COMM_WORLD,&stat);
+          MPI_Recv(myw, nr[worldRank] * c, MPI_INT, 0, 4, MPI_COMM_WORLD,&stat);
       }
       // decompose the pred array
       if(worldRank == 0){ // send indice decomposition to nodes
@@ -534,7 +532,6 @@ void bootScenario3(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
     t = CDR(t);
     }
     // preform the eval
-    //PrintValue(s);
     PROTECT(result_array = eval(s, R_GlobalEnv));
     // get the results out of the REALSXP vector
     for (k=0; k<ltn;k++){
@@ -588,7 +585,7 @@ void bootScenario4(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
 }
 
 void bootScenario5(double * myresults,int * nr, int rank, int r, int ltn,SEXP * SEXPvarg, int lvarg, char * data,
-                                                             char * statistic, int c, double * myw, int * pred, int m){
+                                                             char * statistic, int c, int * myw, int * pred, int m){
   // perform my ranks replications
   int i,j,k;
   SEXP rind, t, s,  result_array, Sdata, pdata, Spred;
@@ -605,7 +602,7 @@ void bootScenario5(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
   for(i=0; i<nr[rank];i++){
     // build the indices for this replication
     for(j=0;j<c;j++){
-      REAL(rind)[j] = myw[count];
+      REAL(rind)[j] = myw[count] / ((double) c);
       count++;
     }
     for(j=0;j<m;j++){
@@ -624,7 +621,6 @@ void bootScenario5(double * myresults,int * nr, int rank, int r, int ltn,SEXP * 
     t = CDR(t);
     }
     // preform the eval
-    //PrintValue(s);
     PROTECT(result_array = eval(s, R_GlobalEnv));
     // get the results out of the REALSXP vector
     for (k=0; k<ltn;k++){
