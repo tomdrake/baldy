@@ -81,24 +81,36 @@ air.rg <- function(data, mle)
 
 
 
-
+library("RUnit")
 library("sprint")
 results = matrix(,4,3, dimnames = list(c("weight", "freq", "ordinary", "parametric"),
                                c("boot", "pboot", "speedup")))
-results[1,1] = as.real(system.time(boot(city, ratio, R=400000, stype="w"))[3])
-results[1,2] = as.real(system.time(pboot(city, ratio, R=400000, stype="w"))[3])
+set.seed(1)			     
+results[1,1] = as.real(system.time(a <- boot(city, ratio, R=400000, stype="w"))[3])
+set.seed(1)			     
+results[1,2] = as.real(system.time(b <- pboot(city, ratio, R=400000, stype="w"))[3])
+checkEquals(a,b,"The results do not match test 1.")
 results[1,3] = results[1,1] / results[1,2]
 
-results[2,1] = as.real(system.time(boot(grav1, diff.means, R=20000, stype="f", strata=grav1[,2]))[3])
-results[2,2] = as.real(system.time(pboot(grav1, diff.means, R=20000, stype="f", strata=grav1[,2]))[3])
+set.seed(1)			     
+results[2,1] = as.real(system.time(a <- boot(grav1, diff.means, R=20000, stype="f", strata=grav1[,2]))[3])
+set.seed(1)			     
+results[2,2] = as.real(system.time(b <- pboot(grav1, diff.means, R=20000, stype="f", strata=grav1[,2]))[3])
+checkEquals(a,b,"The results do not match test 2.")
 results[2,3] = results[2,1] / results[2,2]
 
-results[3,1] = as.real(system.time(boot(nuke.data, nuke.fun, R=2000, m=1, fit.pred=new.fit, x.pred=new.data))[3])
-results[3,2] = as.real(system.time(pboot(nuke.data, nuke.fun, R=2000, m=1, fit.pred=new.fit, x.pred=new.data))[3])
+set.seed(1)			     
+results[3,1] = as.real(system.time(a <- boot(nuke.data, nuke.fun, R=2000, m=1, fit.pred=new.fit, x.pred=new.data))[3])
+set.seed(1)			     
+results[3,2] = as.real(system.time(b <- pboot(nuke.data, nuke.fun, R=2000, m=1, fit.pred=new.fit, x.pred=new.data))[3])
+checkEquals(a,b,"The results do not match test 3.")
 results[3,3] = results[3,1] / results[3,2]
 
-results[4,1] = as.real(system.time(boot(aircondit, air.fun, R=45000, sim="parametric", ran.gen=air.rg, mle=mean(aircondit$hours)))[3])
-results[4,2] = as.real(system.time(pboot(aircondit, air.fun, R=45000, sim="parametric", ran.gen=air.rg, mle=mean(aircondit$hours)))[3])
+set.seed(1)			     
+results[4,1] = as.real(system.time(a <- boot(aircondit, air.fun, R=45000, sim="parametric", ran.gen=air.rg, mle=mean(aircondit$hours)))[3])
+set.seed(1)			     
+results[4,2] = as.real(system.time(b <- pboot(aircondit, air.fun, R=45000, sim="parametric", ran.gen=air.rg, mle=mean(aircondit$hours)))[3])
+checkEquals(a,b,"The results do not match test 4.")
 results[4,3] = results[4,1] / results[4,2]
 
 results

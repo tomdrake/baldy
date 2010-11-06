@@ -72,8 +72,7 @@ SEXP pboot(SEXP scenario,...){
 
   int * find;
   int * ind;
-  int * windt;
-  double * wind;
+  int * wind;
   SEXP f, w, Spred, Sind;
   int m; 
   int * pred;
@@ -109,19 +108,19 @@ SEXP pboot(SEXP scenario,...){
     case 4:
       w = va_arg(ap, SEXP);
       c = ncols(w); // number of columns in the index
-      windt = (int *)malloc(sizeof(int) * r * c);
-      Rmatrix2Carray(w, windt, r, c);
-      response = boot(4, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, windt);
-      free(windt);
+      wind = (int *)malloc(sizeof(int) * r * c);
+      Rmatrix2Carray(w, wind, r, c);
+      response = boot(4, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, wind);
+      free(wind);
       break; 
     case 5:;
       w = va_arg(ap, SEXP);
       Spred = va_arg(ap, SEXP);
       c = ncols(w); // number of columns in the index
       m = ncols(Spred);
-      wind = (double *)malloc(sizeof(double) * r * c);
+      wind = (int *)malloc(sizeof(int) * r * c);
       pred = (int *)malloc(sizeof(int) * r * m);
-      Rmatrix2CDBLarray(w, wind, r, c);
+      Rmatrix2Carray(w, wind, r, c);
       Rmatrix2Carray(Spred, pred, r, m);
       response = boot(5, func_results, r, ltn, varg, CHAR(STRING_ELT(data,0)), translateChar(PRINTNAME(statistic)), c, wind, pred, m);
       free(wind);
